@@ -12,3 +12,4 @@ new ADR that supersedes the old one, not an edit.
 - [0004 — PyFlink over Java Flink for Phase 1](0004-pyflink-over-java.md)
 - [0005 — DuckDB as the Phase 0 dbt target](0005-duckdb-phase0-target.md)
 - [0006 — Synthesized event times in the replay engine](0006-synthesized-event-times.md)
+- [0007 — How machine learning fits in Bullpen Signal](0007-ml-provenance.md)
