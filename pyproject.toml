@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bullpen-signal"
+version = "0.1.0"
+description = "Dual-path decision engine for pitcher fatigue, bullpen readiness, and matchup leverage"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Ivan F. Gruber" }]
+
+dependencies = [
+    "pybaseball>=2.2.7",
+    "MLB-StatsAPI>=1.7.1",
+    "confluent-kafka>=2.4.0",
+    "fastavro>=1.9.0",
+    "pandas>=2.2.0",
+    "pyarrow>=15.0.0",
+    "duckdb>=1.0.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "python-dateutil>=2.9.0",
+    "structlog>=24.1.0",
+    "click>=8.1.0",
+    "rich>=13.7.0",
+]
+
+[project.optional-dependencies]
+dashboard = [
+    "streamlit>=1.35.0",
+    "plotly>=5.20.0",
+    "altair>=5.3.0",
+]
+quality = [
+    "great-expectations>=0.18.0",
+]
+lineage = [
+    "openlineage-python>=1.14.0",
+]
+dev = [
+    "pytest>=8.1.0",
+    "pytest-cov>=5.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
+    "mypy>=1.9.0",
+    "types-python-dateutil",
+    "ipython>=8.22.0",
+]
+
+[project.scripts]
+replay = "ingestion.replay_engine.run:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ingestion*", "streaming*", "apps*", "benchmarks*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --cov=ingestion --cov=streaming --cov-report=term-missing"
+markers = [
+    "integration: integration tests that require the local stack",
+    "slow: tests that take more than a few seconds",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
