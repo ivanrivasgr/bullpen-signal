@@ -12,7 +12,7 @@ The shape of what it returns does not change.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 
 @dataclass(frozen=True)
@@ -91,7 +91,7 @@ def game_context() -> GameContext:
         home_team="Rangers",
         away_team="Tigers",
         venue="Globe Life Field",
-        first_pitch=datetime(2024, 6, 15, 19, 5, tzinfo=timezone.utc),
+        first_pitch=datetime(2024, 6, 15, 19, 5, tzinfo=UTC),
     )
 
 
