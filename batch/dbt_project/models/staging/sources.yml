@@ -1,0 +1,24 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: Raw events landed from Kafka via the streaming path.
+    schema: bronze
+    tables:
+      - name: pitches
+        description: One row per pitch event, including duplicates and late arrivals.
+        columns:
+          - name: event_time
+            tests:
+              - not_null
+          - name: game_pk
+            tests:
+              - not_null
+          - name: at_bat_number
+          - name: pitch_number
+      - name: game_state
+        description: Emitted on inning change, pitching change, pinch-hit, scoring play.
+      - name: corrections
+        description: CDC-shaped field corrections to prior events.
+      - name: alerts
+        description: Alerts emitted by the streaming alert orchestrator.

@@ -1,0 +1,16 @@
+# Copy to ~/.dbt/profiles.yml (or set DBT_PROFILES_DIR to this folder).
+#
+# Phase 0 uses DuckDB against the local parquet files produced by the Flink
+# Iceberg sink. Phase 2 switches to pyiceberg/duckdb-iceberg directly, and
+# Phase 4 adds a cloud Snowflake or BigQuery target.
+
+bullpen_signal:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "../../data/bullpen.duckdb"
+      threads: 4
+      # Phase 2: point at the Iceberg REST catalog instead.
+      # extensions:
+      #   - iceberg
