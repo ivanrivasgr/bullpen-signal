@@ -1,0 +1,39 @@
+name: bullpen_signal
+version: "0.1.0"
+config-version: 2
+
+profile: bullpen_signal
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  bullpen_signal:
+    +materialized: view
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
+      +materialized: incremental
+      +incremental_strategy: merge
+    marts:
+      +schema: marts
+      +materialized: incremental
+      +incremental_strategy: merge
+    reconciliation:
+      +schema: reconciliation
+      +materialized: incremental
+      +incremental_strategy: merge
+
+vars:
+  recent_days_window: 7
