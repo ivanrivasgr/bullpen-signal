@@ -502,6 +502,7 @@ tab_live, tab_canon, tab_recon = st.tabs(
 # Helpers
 # ----------------------------------------------------------------------------
 
+
 def _fatigue_line_chart(signals_data, *, highlight_pitch: int | None = None) -> go.Figure:
     xs = [s.pitch_idx for s in signals_data]
     ys = [s.fatigue for s in signals_data]
@@ -510,7 +511,8 @@ def _fatigue_line_chart(signals_data, *, highlight_pitch: int | None = None) -> 
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x=xs, y=ys,
+            x=xs,
+            y=ys,
             mode="lines",
             line=dict(color="#1A2947", width=2.6),
             name="fatigue",
@@ -519,7 +521,8 @@ def _fatigue_line_chart(signals_data, *, highlight_pitch: int | None = None) -> 
     )
     fig.add_trace(
         go.Scatter(
-            x=xs, y=[v / 3.5 for v in ls],
+            x=xs,
+            y=[v / 3.5 for v in ls],
             mode="lines",
             line=dict(color="#B8722A", width=1.8, dash="dot"),
             name="leverage (scaled)",
@@ -532,24 +535,39 @@ def _fatigue_line_chart(signals_data, *, highlight_pitch: int | None = None) -> 
     fig.add_hline(y=0.70, line=dict(color="#8B2818", width=1.4, dash="dash"))
     # put threshold labels on the right side, outside the chart area
     fig.add_annotation(
-        x=1.005, y=0.55, xref="paper", yref="y",
-        text="warning 0.55", showarrow=False,
+        x=1.005,
+        y=0.55,
+        xref="paper",
+        yref="y",
+        text="warning 0.55",
+        showarrow=False,
         font=dict(family="JetBrains Mono", size=10, color="#C7700F"),
-        xanchor="left", yanchor="middle",
+        xanchor="left",
+        yanchor="middle",
     )
     fig.add_annotation(
-        x=1.005, y=0.70, xref="paper", yref="y",
-        text="action 0.70", showarrow=False,
+        x=1.005,
+        y=0.70,
+        xref="paper",
+        yref="y",
+        text="action 0.70",
+        showarrow=False,
         font=dict(family="JetBrains Mono", size=10, color="#8B2818"),
-        xanchor="left", yanchor="middle",
+        xanchor="left",
+        yanchor="middle",
     )
     if highlight_pitch:
         fig.add_vline(x=highlight_pitch, line=dict(color="#8B2818", width=1.4))
         fig.add_annotation(
-            x=highlight_pitch, y=1.02, xref="x", yref="paper",
-            text=f"alert · pitch {highlight_pitch}", showarrow=False,
+            x=highlight_pitch,
+            y=1.02,
+            xref="x",
+            yref="paper",
+            text=f"alert · pitch {highlight_pitch}",
+            showarrow=False,
             font=dict(family="JetBrains Mono", size=10, color="#8B2818"),
-            xanchor="center", yanchor="bottom",
+            xanchor="center",
+            yanchor="bottom",
         )
 
     fig.update_layout(
@@ -560,18 +578,26 @@ def _fatigue_line_chart(signals_data, *, highlight_pitch: int | None = None) -> 
         height=360,
         xaxis=dict(
             title=dict(text="pitch #", font=dict(size=10, color="#6B5A3E")),
-            showgrid=True, gridcolor="#E0D5B8", zeroline=False,
+            showgrid=True,
+            gridcolor="#E0D5B8",
+            zeroline=False,
             tickfont=dict(color="#4A5875"),
         ),
         yaxis=dict(
             title="",
-            showgrid=True, gridcolor="#E0D5B8", zeroline=False,
+            showgrid=True,
+            gridcolor="#E0D5B8",
+            zeroline=False,
             range=[0.15, 0.95],
             tickfont=dict(color="#4A5875"),
             tickvals=[0.2, 0.4, 0.55, 0.7, 0.8],
         ),
         legend=dict(
-            orientation="h", yanchor="bottom", y=1.08, xanchor="left", x=0,
+            orientation="h",
+            yanchor="bottom",
+            y=1.08,
+            xanchor="left",
+            x=0,
             font=dict(family="Inter", size=10, color="#6B5A3E"),
             bgcolor="rgba(0,0,0,0)",
         ),
@@ -593,10 +619,12 @@ def _velocity_chart(pitch_data) -> go.Figure:
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x=xs, y=ys,
+            x=xs,
+            y=ys,
             mode="markers",
-            marker=dict(size=7, color="#1A2947", opacity=0.5,
-                        line=dict(color="#FAF6EC", width=0.8)),
+            marker=dict(
+                size=7, color="#1A2947", opacity=0.5, line=dict(color="#FAF6EC", width=0.8)
+            ),
             name="velocity",
             hovertemplate="pitch %{x}<br>%{y:.1f} mph<extra></extra>",
         )
@@ -609,7 +637,8 @@ def _velocity_chart(pitch_data) -> go.Figure:
         rolling.append(sum(ys[start : i + 1]) / (i - start + 1))
     fig.add_trace(
         go.Scatter(
-            x=xs, y=rolling,
+            x=xs,
+            y=rolling,
             mode="lines",
             line=dict(color="#B8722A", width=2.4),
             name="10-pitch rolling avg",
@@ -618,11 +647,15 @@ def _velocity_chart(pitch_data) -> go.Figure:
     )
     fig.add_hline(y=baseline, line=dict(color="#4A5875", width=1, dash="dot"))
     fig.add_annotation(
-        x=1.005, y=baseline, xref="paper", yref="y",
+        x=1.005,
+        y=baseline,
+        xref="paper",
+        yref="y",
         text=f"baseline {baseline:.1f}",
         showarrow=False,
         font=dict(family="JetBrains Mono", size=10, color="#4A5875"),
-        xanchor="left", yanchor="middle",
+        xanchor="left",
+        yanchor="middle",
     )
 
     fig.update_layout(
@@ -633,16 +666,24 @@ def _velocity_chart(pitch_data) -> go.Figure:
         height=320,
         xaxis=dict(
             title=dict(text="pitch #", font=dict(size=10, color="#6B5A3E")),
-            showgrid=True, gridcolor="#E0D5B8", zeroline=False,
+            showgrid=True,
+            gridcolor="#E0D5B8",
+            zeroline=False,
             tickfont=dict(color="#4A5875"),
         ),
         yaxis=dict(
             title=dict(text="mph", font=dict(size=10, color="#6B5A3E")),
-            showgrid=True, gridcolor="#E0D5B8", zeroline=False,
+            showgrid=True,
+            gridcolor="#E0D5B8",
+            zeroline=False,
             tickfont=dict(color="#4A5875"),
         ),
         legend=dict(
-            orientation="h", yanchor="bottom", y=1.08, xanchor="left", x=0,
+            orientation="h",
+            yanchor="bottom",
+            y=1.08,
+            xanchor="left",
+            x=0,
             font=dict(family="Inter", size=10, color="#6B5A3E"),
             bgcolor="rgba(0,0,0,0)",
         ),
@@ -955,7 +996,7 @@ Every alert emitted by the streaming orchestrator is joined against the batch-ca
   <td class="num">{r.streaming_value:+.3f}</td>
   <td class="num">{r.canonical_value:+.3f}</td>
   <td class="num">{sign}{r.delta:.3f}</td>
-  <td><span class="recon-class {r.classification}">{r.classification.replace('_', ' ')}</span></td>
+  <td><span class="recon-class {r.classification}">{r.classification.replace("_", " ")}</span></td>
 </tr>""")
 
     st.markdown(
