@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "CorrectionEvent",
+  "namespace": "bullpen.signal.v1",
+  "doc": "A late-breaking correction to a previously published event. CDC-shaped.",
+  "fields": [
+    { "name": "event_time", "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "ingest_time", "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "game_pk", "type": "long" },
+    { "name": "original_pitch_uid", "type": "string" },
+    { "name": "field", "type": "string" },
+    { "name": "old_value", "type": ["null", "string"], "default": null },
+    { "name": "new_value", "type": ["null", "string"], "default": null }
+  ]
+}
