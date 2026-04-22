@@ -10,15 +10,16 @@ Run:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
 
 import plotly.graph_objects as go
 import streamlit as st
 
-import sys
-from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import synthetic_data as sd
+
 # ----------------------------------------------------------------------------
 # Page setup
 # ----------------------------------------------------------------------------
@@ -844,7 +845,7 @@ with tab_canon:
     st.markdown('<div class="watermark-final">FINAL</div>', unsafe_allow_html=True)
 
     st.markdown(
-        f"""
+        """
 <div class="section-head">
   <span class="section-numeral">§ I</span>
   <h2 class="section-title">Canonical game record</h2>
@@ -1019,7 +1020,7 @@ st.markdown(
     f"""
 <div class="footer-rule">
   <span>Bullpen Signal · Phase 0 · Synthetic narrative</span>
-  <span>Rendered {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}</span>
+  <span>Rendered {datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")}</span>
 </div>
 """,
     unsafe_allow_html=True,
