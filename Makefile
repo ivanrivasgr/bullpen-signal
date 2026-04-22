@@ -1,4 +1,4 @@
-.PHONY: help up down logs ps replay dashboard test lint format clean bootstrap topics
+.PHONY: help up down logs ps replay dashboard test lint format clean bootstrap topics bootstrap-iceberg
 
 help:
 	@echo "Bullpen Signal - dev commands"
@@ -9,6 +9,7 @@ help:
 	@echo "  make logs        tail logs from the local stack"
 	@echo "  make ps          show running services"
 	@echo "  make topics      create kafka topics for the pipeline"
+	@echo "  make bootstrap-iceberg  create bronze/silver/gold namespaces in iceberg"
 	@echo "  make replay      run replay engine on sample game"
 	@echo "  make dashboard   launch streamlit dashboard"
 	@echo "  make test        run pytest"
@@ -34,6 +35,9 @@ ps:
 
 topics:
 	bash infra/scripts/create_topics.sh
+
+bootstrap-iceberg:
+	python infra/scripts/bootstrap_iceberg.py
 
 replay:
 	python -m ingestion.replay_engine.run --game-date 2024-06-15 --speed 5
