@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "GameStateEvent",
+  "namespace": "bullpen.signal.v1",
+  "doc": "Game-state snapshot emitted on inning change, pitching change, pinch-hit, or scoring play.",
+  "fields": [
+    { "name": "event_time", "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "ingest_time", "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "game_pk", "type": "long" },
+    { "name": "inning", "type": "int" },
+    { "name": "inning_topbot", "type": { "type": "enum", "name": "HalfInning", "symbols": ["Top", "Bot"] } },
+    { "name": "home_score", "type": "int" },
+    { "name": "away_score", "type": "int" },
+    { "name": "home_pitcher_id", "type": ["null", "long"], "default": null },
+    { "name": "away_pitcher_id", "type": ["null", "long"], "default": null },
+    { "name": "next_batter_id", "type": ["null", "long"], "default": null },
+    {
+      "name": "event_type",
+      "type": {
+        "type": "enum",
+        "name": "GameEventType",
+        "symbols": ["inning_start", "pitching_change", "pinch_hit", "scoring_play", "game_start", "game_end"]
+      }
+    }
+  ]
+}

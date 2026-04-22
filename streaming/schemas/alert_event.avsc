@@ -1,0 +1,33 @@
+{
+  "type": "record",
+  "name": "AlertEvent",
+  "namespace": "bullpen.signal.v1",
+  "doc": "An operational alert emitted by the streaming alert orchestrator.",
+  "fields": [
+    { "name": "event_time", "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "emitted_time", "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "alert_uid", "type": "string" },
+    { "name": "game_pk", "type": "long" },
+    { "name": "pitcher_id", "type": "long" },
+    {
+      "name": "signal_type",
+      "type": {
+        "type": "enum",
+        "name": "SignalType",
+        "symbols": ["fatigue", "leverage", "matchup", "composite"]
+      }
+    },
+    {
+      "name": "severity",
+      "type": {
+        "type": "enum",
+        "name": "Severity",
+        "symbols": ["info", "warning", "action"]
+      }
+    },
+    { "name": "score", "type": "double" },
+    { "name": "score_threshold", "type": "double" },
+    { "name": "rationale", "type": "string", "doc": "Short human-readable explanation suitable for a dugout display." },
+    { "name": "inputs_snapshot_uid", "type": "string", "doc": "Pointer to the features used, for reconciliation." }
+  ]
+}
