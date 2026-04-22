@@ -1,4 +1,4 @@
-.PHONY: help up down logs ps replay dashboard test lint format clean bootstrap
+.PHONY: help up down logs ps replay dashboard test lint format clean bootstrap topics
 
 help:
 	@echo "Bullpen Signal - dev commands"
@@ -8,6 +8,7 @@ help:
 	@echo "  make down        stop local stack"
 	@echo "  make logs        tail logs from the local stack"
 	@echo "  make ps          show running services"
+	@echo "  make topics      create kafka topics for the pipeline"
 	@echo "  make replay      run replay engine on sample game"
 	@echo "  make dashboard   launch streamlit dashboard"
 	@echo "  make test        run pytest"
@@ -30,6 +31,9 @@ logs:
 
 ps:
 	cd infra/docker && docker compose ps
+
+topics:
+	bash infra/scripts/create_topics.sh
 
 replay:
 	python -m ingestion.replay_engine.run --game-date 2024-06-15 --speed 5
