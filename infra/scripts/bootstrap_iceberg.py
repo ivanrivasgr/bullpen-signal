@@ -21,6 +21,7 @@ Environment variables (optional, defaults shown):
     ICEBERG_S3_ACCESS_KEY    = minioadmin
     ICEBERG_S3_SECRET_KEY    = minioadmin
 """
+
 from __future__ import annotations
 
 import os
