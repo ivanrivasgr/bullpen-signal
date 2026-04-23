@@ -17,9 +17,9 @@ Usage:
 
 Environment variables (optional, defaults shown):
     ICEBERG_CATALOG_URI      = http://localhost:8181
-    ICEBERG_S3_ENDPOINT      = http://localhost:9000
-    ICEBERG_S3_ACCESS_KEY    = minioadmin
-    ICEBERG_S3_SECRET_KEY    = minioadmin
+    S3_ENDPOINT              = http://localhost:9000
+    S3_ACCESS_KEY            = minioadmin
+    S3_SECRET_KEY            = minioadmin
 """
 
 from __future__ import annotations
@@ -39,9 +39,9 @@ NAMESPACES: list[tuple[str, str]] = [
 
 def main() -> int:
     catalog_uri = os.getenv("ICEBERG_CATALOG_URI", "http://localhost:8181")
-    s3_endpoint = os.getenv("ICEBERG_S3_ENDPOINT", "http://localhost:9000")
-    s3_access_key = os.getenv("ICEBERG_S3_ACCESS_KEY", "minioadmin")
-    s3_secret_key = os.getenv("ICEBERG_S3_SECRET_KEY", "minioadmin")
+    s3_endpoint = os.getenv("S3_ENDPOINT", "http://localhost:9000")
+    s3_access_key = os.getenv("S3_ACCESS_KEY", "minioadmin")
+    s3_secret_key = os.getenv("S3_SECRET_KEY", "minioadmin")
 
     print(f"Loading Iceberg REST catalog at {catalog_uri}")
     catalog = load_catalog(
