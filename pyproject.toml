@@ -14,7 +14,7 @@ authors = [{ name = "Ivan F. Gruber" }]
 dependencies = [
     "pybaseball>=2.2.7",
     "MLB-StatsAPI>=1.7.1",
-    "confluent-kafka>=2.4.0",
+    "confluent-kafka[schema-registry]>=2.4.0",
     "fastavro>=1.9.0",
     "pandas>=2.2.0",
     "pyarrow>=15.0.0,<17",
