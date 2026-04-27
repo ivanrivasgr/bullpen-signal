@@ -69,7 +69,7 @@ quote-style = "double"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers --cov=ingestion --cov=streaming --cov-report=term-missing"
+addopts = "-ra --strict-markers --cov=ingestion --cov=streaming --cov-report=term-missing -m 'not integration and not slow'"
 markers = [
     "integration: integration tests that require the local stack",
     "slow: tests that take more than a few seconds",
