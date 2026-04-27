@@ -22,7 +22,8 @@ import structlog
 from ingestion.noise_injector import maybe_inject_noise
 from ingestion.replay_engine.avro_publisher import AvroEventPublisher
 from ingestion.replay_engine.config import config
-from ingestion.replay_engine.events import CorrectionEvent, PitchEvent
+from ingestion.replay_engine.events import CorrectionEvent, GameStateEvent, PitchEvent
+from ingestion.replay_engine.game_state_deriver import derive_game_state_events
 from ingestion.replay_engine.mapping import now_utc, row_to_pitch_event
 from ingestion.replay_engine.producer import EventPublisher
 from ingestion.replay_engine.statcast_source import (
@@ -153,9 +154,15 @@ def _run_replay(
     correction_count = 0
     duplicate_count = 0
     late_count = 0
+    game_state_count = 0
 
     first_event_time: datetime = df.iloc[0]["event_time"].to_pydatetime()
     wall_clock_start = datetime.now(UTC)
+
+    # Track the last published pitch per game_pk so the deriver can compare
+    # consecutive states. Replay engine only handles one game per invocation
+    # today, but keying by game_pk keeps this correct if that ever changes.
+    previous_pitch_by_game: dict[int, PitchEvent] = {}
 
     for _idx, row in df.iterrows():
         event_time = row["event_time"].to_pydatetime()
@@ -169,6 +176,15 @@ def _run_replay(
             time.sleep(min(sleep_for, 5.0))
 
         pitch = row_to_pitch_event(row, ingest_time=now_utc())
+
+        # Derive game state events from the transition between the previously
+        # published pitch (if any) and this one. Publish them BEFORE the pitch
+        # so consumers see the state context that frames the pitch.
+        previous = previous_pitch_by_game.get(pitch.game_pk)
+        for gs_event in derive_game_state_events(previous, pitch):
+            _publish(publisher, gs_event)
+            game_state_count += 1
+        previous_pitch_by_game[pitch.game_pk] = pitch
 
         for produced in maybe_inject_noise(
             pitch,
@@ -194,11 +210,13 @@ def _run_replay(
                 duplicates=duplicate_count,
                 late=late_count,
                 corrections=correction_count,
+                game_state_events=game_state_count,
             )
 
 
 def _publish(
-    publisher: EventPublisher | AvroEventPublisher | None, event: PitchEvent | CorrectionEvent
+    publisher: EventPublisher | AvroEventPublisher | None,
+    event: PitchEvent | CorrectionEvent | GameStateEvent,
 ) -> None:
     if publisher is None:
         return
@@ -208,6 +226,12 @@ def _publish(
             key=event.original_pitch_uid,
             event=event,
         )
+    elif isinstance(event, GameStateEvent):
+        # Key by game + event_type so consumers can partition by game while
+        # still seeing all state transitions for a single game on the same
+        # partition. event_type appended for human-readable kafka inspection.
+        key = f"{event.game_pk}:{event.event_type}"
+        publisher.publish(topic=config.topic_game_state_raw, key=key, event=event)
     else:
         key = f"{event.game_pk}:{event.at_bat_number}:{event.pitch_number}"
         publisher.publish(topic=config.topic_pitches_raw, key=key, event=event)
