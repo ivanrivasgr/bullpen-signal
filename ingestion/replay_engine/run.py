@@ -10,6 +10,7 @@ Example:
 
 from __future__ import annotations
 
+import os
 import random
 import sys
 import time
@@ -19,6 +20,7 @@ import click
 import structlog
 
 from ingestion.noise_injector import maybe_inject_noise
+from ingestion.replay_engine.avro_publisher import AvroEventPublisher
 from ingestion.replay_engine.config import config
 from ingestion.replay_engine.events import CorrectionEvent, PitchEvent
 from ingestion.replay_engine.mapping import now_utc, row_to_pitch_event
@@ -116,7 +118,7 @@ def main(
     if limit is not None:
         df = df.head(limit)
 
-    publisher = None if dry_run else EventPublisher(config.kafka_bootstrap_servers)
+    publisher = None if dry_run else _build_publisher(config.kafka_bootstrap_servers)
     _run_replay(df, publisher, effective_speed, rng)
 
     if publisher is not None:
@@ -125,7 +127,28 @@ def main(
     log.info("replay complete", pitches=len(df))
 
 
-def _run_replay(df, publisher: EventPublisher | None, speed: float, rng: random.Random) -> None:
+def _build_publisher(bootstrap_servers: str) -> EventPublisher | AvroEventPublisher:
+    """Choose publisher implementation based on PUBLISHER_TYPE env var.
+
+    PUBLISHER_TYPE=avro (default in Phase 1+) returns AvroEventPublisher with
+    Schema Registry-backed Avro serialization. PUBLISHER_TYPE=json (legacy,
+    Phase 0) returns the JSON EventPublisher. The env var lets us flip back
+    quickly during Day 2 if the Flink integration surfaces an Avro-side bug.
+    """
+    publisher_type = os.environ.get("PUBLISHER_TYPE", "avro").lower()
+    if publisher_type == "avro":
+        log.info("publisher.selected", type="avro")
+        return AvroEventPublisher(bootstrap_servers)
+    elif publisher_type == "json":
+        log.info("publisher.selected", type="json")
+        return EventPublisher(bootstrap_servers)
+    else:
+        raise ValueError(f"PUBLISHER_TYPE must be 'avro' or 'json', got: {publisher_type!r}")
+
+
+def _run_replay(
+    df, publisher: EventPublisher | AvroEventPublisher | None, speed: float, rng: random.Random
+) -> None:
     pitch_count = 0
     correction_count = 0
     duplicate_count = 0
@@ -174,7 +197,9 @@ def _run_replay(df, publisher: EventPublisher | None, speed: float, rng: random.
             )
 
 
-def _publish(publisher: EventPublisher | None, event: PitchEvent | CorrectionEvent) -> None:
+def _publish(
+    publisher: EventPublisher | AvroEventPublisher | None, event: PitchEvent | CorrectionEvent
+) -> None:
     if publisher is None:
         return
     if isinstance(event, CorrectionEvent):
