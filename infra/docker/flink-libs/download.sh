@@ -11,7 +11,6 @@ cd "$SCRIPT_DIR"
 
 # Format: filename|url
 declare -a JARS=(
-    "flink-connector-kafka-3.4.0-1.20.jar|https://repo.maven.apache.org/maven2/org/apache/flink/flink-connector-kafka/3.4.0-1.20/flink-connector-kafka-3.4.0-1.20.jar"
     "flink-sql-connector-kafka-3.4.0-1.20.jar|https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.4.0-1.20/flink-sql-connector-kafka-3.4.0-1.20.jar"
     "flink-avro-1.20.0.jar|https://repo.maven.apache.org/maven2/org/apache/flink/flink-avro/1.20.0/flink-avro-1.20.0.jar"
     "flink-avro-confluent-registry-1.20.0.jar|https://repo.maven.apache.org/maven2/org/apache/flink/flink-avro-confluent-registry/1.20.0/flink-avro-confluent-registry-1.20.0.jar"
