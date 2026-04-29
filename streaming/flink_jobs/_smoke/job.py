@@ -1,62 +1,50 @@
-"""Phase 1 Day 2 smoke job: read pitches.raw via Table API + Confluent Avro format.
+"""Phase 1 Day 3 smoke job: read pitches.raw with event-time watermarks.
 
-This is the wire-up smoke test. It uses the Table API with the built-in
-`avro-confluent` format which natively understands the Confluent Schema Registry
-wire format (magic byte + schema_id + Avro payload). No Python operators are
-involved on the data path; deserialization happens in Java.
+Uses the Table API with Flink's avro-confluent format so Confluent-framed
+Avro decoding happens in Java. The source defines an event-time column and a
+5-minute bounded out-of-orderness watermark.
 
-The job creates a source table over pitches.raw, then INSERTs into a print
-sink which writes each row to TaskManager stdout in `+I[col1, col2, ...]` form.
-That output is what the integration test asserts on.
-
-Why Table API instead of DataStream + custom decode:
-  PyFlink's SimpleStringSchema is the only DataStream value deserializer
-  exposed in the Python API, and it irreversibly corrupts non-UTF-8 bytes
-  via Java's `replace` errors handling — incompatible with binary Avro
-  payloads. The Table API + avro-confluent format avoids the issue
-  entirely by doing the decode in Java with full SR integration.
-
-Run with:
-  bash streaming/flink_jobs/_smoke/submit.sh
-
-Output appears in the TaskManager stdout, one line per pitch, e.g.:
-  +I[605400, 1720123200000]
+The print sink still emits one row per pitch for integration-test visibility:
+  [smoke_job]... +I[605400, 1720123200000]
 """
 
 from __future__ import annotations
 
-from pyflink.table import EnvironmentSettings, TableEnvironment
-
-# Inside the container these resolve to the docker-compose service names.
 KAFKA_BOOTSTRAP = "redpanda:29092"
 SCHEMA_REGISTRY = "http://redpanda:18081"
+SMOKE_GROUP_ID = "bullpen-smoke-job"
+WATERMARK_DELAY_MINUTES = 5
 
 
-def main() -> None:
-    settings = EnvironmentSettings.in_streaming_mode()
-    t_env = TableEnvironment.create(settings)
-
-    # Source table: pitches.raw with Confluent-framed Avro values.
-    # Only the two fields the smoke test cares about are projected;
-    # other Avro fields are silently ignored by the deserializer.
-    t_env.execute_sql(f"""
+def build_pitches_source_ddl(
+    *,
+    bootstrap_servers: str = KAFKA_BOOTSTRAP,
+    schema_registry_url: str = SCHEMA_REGISTRY,
+    group_id: str = SMOKE_GROUP_ID,
+    watermark_delay_minutes: int = WATERMARK_DELAY_MINUTES,
+) -> str:
+    """Build the Kafka source DDL with event-time watermarking."""
+    return f"""
         CREATE TABLE pitches_source (
             pitcher_id BIGINT,
-            event_time BIGINT
+            event_time BIGINT,
+            event_ts AS TO_TIMESTAMP_LTZ(event_time, 3),
+            WATERMARK FOR event_ts AS event_ts - INTERVAL '{watermark_delay_minutes}' MINUTE
         ) WITH (
             'connector' = 'kafka',
             'topic' = 'pitches.raw',
-            'properties.bootstrap.servers' = '{KAFKA_BOOTSTRAP}',
-            'properties.group.id' = 'bullpen-smoke-job',
+            'properties.bootstrap.servers' = '{bootstrap_servers}',
+            'properties.group.id' = '{group_id}',
             'scan.startup.mode' = 'earliest-offset',
             'value.format' = 'avro-confluent',
-            'value.avro-confluent.url' = '{SCHEMA_REGISTRY}'
+            'value.avro-confluent.url' = '{schema_registry_url}'
         )
-    """)
+    """
 
-    # Sink: built-in print connector. Each row is rendered as
-    # `+I[<pitcher_id>, <event_time>]` to TaskManager stdout.
-    t_env.execute_sql("""
+
+def build_smoke_sink_ddl() -> str:
+    """Build the print sink DDL used by the integration test."""
+    return """
         CREATE TABLE smoke_sink (
             pitcher_id BIGINT,
             event_time BIGINT
@@ -64,15 +52,27 @@ def main() -> None:
             'connector' = 'print',
             'print-identifier' = '[smoke_job]'
         )
-    """)
+    """
 
-    # The job itself: pull both fields straight through. The print sink will
-    # emit one line per pitch with the [smoke_job] tag the integration test
-    # greps for.
-    t_env.execute_sql("""
+
+def build_smoke_insert_sql() -> str:
+    """Project decoded pitch rows into the print sink."""
+    return """
         INSERT INTO smoke_sink
-        SELECT pitcher_id, event_time FROM pitches_source
-    """)
+        SELECT pitcher_id, event_time
+        FROM pitches_source
+    """
+
+
+def main() -> None:
+    from pyflink.table import EnvironmentSettings, TableEnvironment
+
+    settings = EnvironmentSettings.in_streaming_mode()
+    t_env = TableEnvironment.create(settings)
+
+    t_env.execute_sql(build_pitches_source_ddl())
+    t_env.execute_sql(build_smoke_sink_ddl())
+    t_env.execute_sql(build_smoke_insert_sql())
 
 
 if __name__ == "__main__":
