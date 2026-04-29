@@ -42,7 +42,7 @@ def _configure_logging(level: str) -> None:
             structlog.dev.ConsoleRenderer(),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(
-            structlog.stdlib._NAME_TO_LEVEL.get(level.lower(), 20)
+            structlog.stdlib.NAME_TO_LEVEL.get(level.lower(), 20)
         ),
     )
 
