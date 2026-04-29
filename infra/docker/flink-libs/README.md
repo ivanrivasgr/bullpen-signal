@@ -19,23 +19,25 @@ All JARs are downloaded from Maven Central. URLs are pinned to specific
 versions for reproducibility. Bump versions only with a corresponding ADR
 update.
 
-### 1. Kafka source/sink
-
-- Artifact: `flink-connector-kafka`
-- Version: **3.4.0-1.20** (compatible with Flink 1.20.x; expected to work
-  with 2.2.0 — verify at smoke test time, fall back to 3.3.0-1.20 if
-  the 1.20-line API broke in 2.2.0)
-- URL:
-  https://repo.maven.apache.org/maven2/org/apache/flink/flink-connector-kafka/3.4.0-1.20/flink-connector-kafka-3.4.0-1.20.jar
-- Filename: `flink-connector-kafka-3.4.0-1.20.jar`
-
-### 2. Kafka SQL connector (optional, kept for future Table API work)
+### 1. Kafka source/sink (SQL connector — used for both Table API and DataStream)
 
 - Artifact: `flink-sql-connector-kafka`
 - Version: **3.4.0-1.20**
 - URL:
   https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.4.0-1.20/flink-sql-connector-kafka-3.4.0-1.20.jar
 - Filename: `flink-sql-connector-kafka-3.4.0-1.20.jar`
+
+We deliberately use **only the SQL connector** (the fat 5.4 MB JAR), not
+the slim `flink-connector-kafka` (474 KB). The slim JAR expects the
+standalone `org.apache.kafka:kafka-clients` to be on the classpath
+separately, which the base Flink image does not provide. The SQL
+connector is a fat JAR that shades and bundles `kafka-clients` internally
+under `org.apache.flink.kafka.shaded.*`, so it works out of the box in
+standalone deployments without managing transitive Kafka client versions.
+
+The SQL connector also exposes the `KafkaSource` builder used by the
+DataStream API, so a single JAR covers both APIs. This is the practice
+Apache Flink's standalone deployment docs recommend.
 
 ### 3. Avro core
 

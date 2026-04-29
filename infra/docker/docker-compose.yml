@@ -95,7 +95,10 @@ services:
       - "8181:8181"
 
   flink-jobmanager:
-    image: flink:2.2.0-scala_2.12-java11
+    build:
+      context: ./flink-pyflink
+      dockerfile: Dockerfile
+    image: bullpen-flink:1.20.3-pyflink
     container_name: bullpen-flink-jm
     command: jobmanager
     environment:
@@ -112,7 +115,10 @@ services:
       - ./flink-libs:/opt/flink/lib/connectors:ro
 
   flink-taskmanager:
-    image: flink:2.2.0-scala_2.12-java11
+    build:
+      context: ./flink-pyflink
+      dockerfile: Dockerfile
+    image: bullpen-flink:1.20.3-pyflink
     container_name: bullpen-flink-tm
     command: taskmanager
     depends_on:
