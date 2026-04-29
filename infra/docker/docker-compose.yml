@@ -129,6 +129,9 @@ services:
         jobmanager.rpc.address: flink-jobmanager
         taskmanager.numberOfTaskSlots: 4
         state.backend: rocksdb
+        taskmanager.memory.process.size: 2560m
+        taskmanager.memory.task.off-heap.size: 512mb
+        taskmanager.memory.framework.off-heap.size: 256mb
     volumes:
       - flink-checkpoints:/tmp/flink-checkpoints
       - ./flink-libs:/opt/flink/lib/connectors:ro

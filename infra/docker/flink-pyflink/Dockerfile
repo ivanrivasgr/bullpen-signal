@@ -40,11 +40,17 @@ RUN pip3 install --no-cache-dir \
 RUN python3 --version \
     && python3 -c "from pyflink.datastream import StreamExecutionEnvironment; print('pyflink import ok')"
 
-# Pre-create the checkpoint directory with flink ownership. Docker mounts
-# named volumes as root by default; without this, the JobMaster fails to
-# create per-job state subdirs because the runtime user (flink) cannot
-# write into a root-owned mountpoint.
-RUN mkdir -p /tmp/flink-checkpoints \
-    && chown -R flink:flink /tmp/flink-checkpoints
+# Wrap the stock Flink entrypoint so connector JARs mounted at runtime are
+# copied into /opt/flink/lib before the JVM starts. Flink's classpath scans
+# JARs in /opt/flink/lib itself, not arbitrary nested directories.
+COPY start-flink.sh /usr/local/bin/start-flink.sh
+
+# Pre-create writable runtime dirs. Docker mounts named volumes as root by
+# default; without this, the JobMaster fails to create per-job state subdirs.
+RUN chmod +x /usr/local/bin/start-flink.sh \
+    && mkdir -p /tmp/flink-checkpoints \
+    && chown -R flink:flink /tmp/flink-checkpoints /opt/flink/lib
 
 USER flink
+
+ENTRYPOINT ["/usr/local/bin/start-flink.sh"]
