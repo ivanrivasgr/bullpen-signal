@@ -26,6 +26,7 @@ from pathlib import Path
 
 import pytest
 
+from infra.scripts.create_bronze_tables import ensure_bronze_pitches_table
 from ingestion.replay_engine.avro_publisher import AvroEventPublisher
 from ingestion.replay_engine.events import PitchEvent
 from tests.integration.conftest import BOOTSTRAP_SERVERS, SCHEMA_REGISTRY_URL
@@ -63,6 +64,8 @@ def _docker_exec(*args: str, check: bool = False) -> subprocess.CompletedProcess
 
 def _submit_smoke_job() -> str:
     """Copy job.py into the JM container and submit it. Returns the JobID."""
+    ensure_bronze_pitches_table()
+
     if not SMOKE_JOB_HOST_PATH.exists():
         pytest.fail(f"smoke job source not found at {SMOKE_JOB_HOST_PATH}")
 
@@ -178,6 +181,33 @@ def _wait_for_n_smoke_lines(
     )
 
 
+def _wait_for_smoke_pitcher_ids(
+    expected_pitcher_ids: set[int],
+    *,
+    since_count: int,
+    timeout: float,
+) -> list[tuple[int, int]]:
+    """Poll TM logs until all expected pitcher IDs appear in new smoke lines."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        pairs = _get_tm_smoke_lines()
+        new_pairs = pairs[since_count:]
+        seen_pitcher_ids = {pitcher_id for pitcher_id, _ in new_pairs}
+        if expected_pitcher_ids.issubset(seen_pitcher_ids):
+            return new_pairs
+        time.sleep(POLL_INTERVAL)
+
+    pairs = _get_tm_smoke_lines()
+    new_pairs = pairs[since_count:]
+    seen_pitcher_ids = {pitcher_id for pitcher_id, _ in new_pairs}
+    pytest.fail(
+        "expected pitcher IDs did not all appear in new [smoke_job] lines. "
+        f"missing={sorted(expected_pitcher_ids - seen_pitcher_ids)} "
+        f"seen={sorted(seen_pitcher_ids)} "
+        f"tail={new_pairs[-8:]}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Synthetic data
 # ---------------------------------------------------------------------------
@@ -256,17 +286,17 @@ def test_smoke_job_decodes_avro_pitches_from_kafka(clean_topic) -> None:
         remaining = publisher.flush(timeout=10.0)
         assert remaining == 0, f"{remaining} messages failed to flush"
 
-        all_lines = _wait_for_n_smoke_lines(
-            expected=3, since_count=baseline, timeout=SMOKE_OUTPUT_TIMEOUT
+        expected_pitcher_ids = {pitch.pitcher_id for pitch in pitches}
+        new_lines = _wait_for_smoke_pitcher_ids(
+            expected_pitcher_ids,
+            since_count=baseline,
+            timeout=SMOKE_OUTPUT_TIMEOUT,
         )
-        new_lines = all_lines[baseline:]
 
-        # Every published pitcher_id appears in the new TM output
         seen_pitcher_ids = {pid for pid, _ in new_lines}
-        for pitch in pitches:
-            assert pitch.pitcher_id in seen_pitcher_ids, (
-                f"pitcher_id {pitch.pitcher_id} not seen in new TM output. New lines: {new_lines}"
-            )
+        assert expected_pitcher_ids.issubset(seen_pitcher_ids), (
+            f"missing pitcher IDs {expected_pitcher_ids - seen_pitcher_ids}. New lines: {new_lines}"
+        )
 
     finally:
         _cancel_job(job_id)
