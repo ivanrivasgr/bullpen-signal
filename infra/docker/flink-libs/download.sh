@@ -25,6 +25,9 @@ declare -a JARS=(
     "commons-compress-1.21.jar|https://repo.maven.apache.org/maven2/org/apache/commons/commons-compress/1.21/commons-compress-1.21.jar"
     "snakeyaml-2.0.jar|https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.0/snakeyaml-2.0.jar"
     "kafka-clients-7.5.3-ccs.jar|https://packages.confluent.io/maven/org/apache/kafka/kafka-clients/7.5.3-ccs/kafka-clients-7.5.3-ccs.jar"
+    "hadoop-client-api-3.3.6.jar|https://repo.maven.apache.org/maven2/org/apache/hadoop/hadoop-client-api/3.3.6/hadoop-client-api-3.3.6.jar"
+    "hadoop-client-runtime-3.3.6.jar|https://repo.maven.apache.org/maven2/org/apache/hadoop/hadoop-client-runtime/3.3.6/hadoop-client-runtime-3.3.6.jar"
+    "iceberg-aws-bundle-1.10.1.jar|https://repo.maven.apache.org/maven2/org/apache/iceberg/iceberg-aws-bundle/1.10.1/iceberg-aws-bundle-1.10.1.jar"
     "iceberg-flink-runtime-1.20-1.10.1.jar|https://repo.maven.apache.org/maven2/org/apache/iceberg/iceberg-flink-runtime-1.20/1.10.1/iceberg-flink-runtime-1.20-1.10.1.jar"
 )
 

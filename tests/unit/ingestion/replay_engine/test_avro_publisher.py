@@ -115,7 +115,7 @@ class TestPitchEventConversion:
         assert result["release_speed"] is None
         assert result["on_1b"] is None
 
-    def test_inning_topbot_passes_through_as_string_for_avro_enum(self) -> None:
+    def test_inning_topbot_passes_through_as_string_for_avro_field(self) -> None:
         pitch = _make_pitch(inning_topbot="Bot")
         result = pitch_event_to_avro_dict(pitch)
         assert result["inning_topbot"] == "Bot"
