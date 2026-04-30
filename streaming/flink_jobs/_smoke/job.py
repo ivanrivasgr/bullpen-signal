@@ -76,6 +76,7 @@ def build_pitches_source_ddl(
             is_late_arrival BOOLEAN NOT NULL,
             is_duplicate BOOLEAN NOT NULL,
             correction_of STRING,
+            kafka_partition INT METADATA FROM 'partition' VIRTUAL,
             source_offset BIGINT METADATA FROM 'offset' VIRTUAL,
             event_ts AS TO_TIMESTAMP_LTZ(event_time, 3),
             WATERMARK FOR event_ts AS event_ts - INTERVAL '{watermark_delay_minutes}' MINUTE
@@ -152,8 +153,7 @@ def build_bronze_pitches_insert_sql() -> str:
     return f"""
         INSERT INTO {ICEBERG_CATALOG}.bronze.pitches
         SELECT
-            event_time,
-            ingest_time,
+            TO_TIMESTAMP_LTZ(event_time, 3) AS event_time,
             game_pk,
             at_bat_number,
             pitch_number,
@@ -181,7 +181,8 @@ def build_bronze_pitches_insert_sql() -> str:
             is_duplicate,
             correction_of,
             CURRENT_TIMESTAMP AS ingestion_time,
-            source_offset
+            source_offset AS source_offset,
+            kafka_partition AS kafka_partition
         FROM pitches_source
     """
 

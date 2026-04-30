@@ -1,4 +1,4 @@
-"""Iceberg schema-as-code for bronze.pitches."""
+"""Schema definition for the bronze pitches Iceberg table."""
 
 from __future__ import annotations
 
@@ -15,12 +15,13 @@ from pyiceberg.types import (
     TimestamptzType,
 )
 
-BRONZE_PITCHES_IDENTIFIER = "bronze.pitches"
+BRONZE_PITCHES_NAMESPACE = "bronze"
+BRONZE_PITCHES_TABLE = "pitches"
+BRONZE_PITCHES_IDENTIFIER = f"{BRONZE_PITCHES_NAMESPACE}.{BRONZE_PITCHES_TABLE}"
 BRONZE_PITCHES_LOCATION = "s3://bullpen-warehouse/bronze/pitches"
 
 BRONZE_PITCHES_SCHEMA = Schema(
-    NestedField(field_id=1, name="event_time", field_type=LongType(), required=True),
-    NestedField(field_id=2, name="ingest_time", field_type=LongType(), required=True),
+    NestedField(field_id=1, name="event_time", field_type=TimestamptzType(), required=True),
     NestedField(field_id=3, name="game_pk", field_type=LongType(), required=True),
     NestedField(field_id=4, name="at_bat_number", field_type=IntegerType(), required=True),
     NestedField(field_id=5, name="pitch_number", field_type=IntegerType(), required=True),
@@ -49,22 +50,14 @@ BRONZE_PITCHES_SCHEMA = Schema(
     NestedField(field_id=28, name="correction_of", field_type=StringType(), required=False),
     NestedField(field_id=29, name="ingestion_time", field_type=TimestamptzType(), required=True),
     NestedField(field_id=30, name="source_offset", field_type=LongType(), required=True),
+    NestedField(field_id=31, name="kafka_partition", field_type=IntegerType(), required=True),
 )
 
 BRONZE_PITCHES_PARTITION_SPEC = PartitionSpec(
     PartitionField(
-        source_id=29,
+        source_id=1,
         field_id=1000,
         transform=DayTransform(),
-        name="ingestion_day",
+        name="event_day",
     )
 )
-
-BRONZE_PITCHES_PROPERTIES = {
-    "format-version": "2",
-    "write.format.default": "parquet",
-}
-
-
-def bronze_pitches_field_names() -> list[str]:
-    return [field.name for field in BRONZE_PITCHES_SCHEMA.fields]
