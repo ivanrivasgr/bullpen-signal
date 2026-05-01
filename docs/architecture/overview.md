@@ -71,3 +71,38 @@ Not in any single job. It lives in the **reconciliation schema**. Every
 interesting claim in the Medium article is backed by a query against
 `reconciliation.*`. If the reconciliation tables lie, the project lies.
 Everything else is plumbing around that claim.
+
+## Milestone 1 Verified Flow - 2026-05-01
+
+Milestone 1 now has a verified local streaming-to-lakehouse path:
+
+1. Synthetic baseball pitch events are produced by the replay engine.
+2. Events are encoded as Avro values with Confluent framing.
+3. Redpanda Kafka stores the raw `pitches.raw` stream.
+4. Redpanda Schema Registry serves the Avro contracts used by Flink.
+5. The PyFlink smoke job reads Kafka through the Table API.
+6. Event-time watermarks are derived from `event_time`.
+7. Print sinks keep direct runtime observability through `[smoke_job]` and `[smoke_counts]`.
+8. A parallel StatementSet branch writes decoded pitches into `bullpen.bronze.pitches`.
+9. Iceberg REST catalog tracks table metadata.
+10. MinIO stores Iceberg metadata and data files.
+11. Local inspection uses PyIceberg snapshot reads registered into DuckDB for SQL.
+
+Confirmed working locally:
+
+- Kafka Avro publish and decode
+- Schema Registry contract registration
+- Flink event-time source DDL
+- Parallel smoke job execution
+- Durable Iceberg bronze writes
+- Snapshot-aware local bronze inspection
+- Integration coverage for Kafka -> Flink -> Iceberg
+
+Designed but not implemented yet:
+
+- Silver table modeling
+- Fatigue, leverage, and matchup signal jobs
+- Alert orchestrator
+- Serving-layer projections
+- Dashboard/API consumers
+- Production orchestration
