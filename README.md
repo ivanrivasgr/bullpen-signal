@@ -6,7 +6,7 @@ What real-time gets you first, what batch gets you right, and why a manager need
 
 ## Status
 
-Work in progress. Phase 0 scaffolding. Not a working system yet.
+Phase 1 in progress. Bronze lakehouse layer is live: a Flink streaming job reads Avro pitch events from Kafka and writes them to an Iceberg `bronze.pitches` table on MinIO, queryable from DuckDB. Streaming jobs for fatigue / leverage / matchup signals, alert orchestrator, silver / gold layers, and the dashboard are not yet implemented.
 
 ## The thesis
 
