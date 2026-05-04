@@ -6,7 +6,9 @@ What real-time gets you first, what batch gets you right, and why a manager need
 
 ## Status
 
-Phase 1 in progress. Bronze lakehouse layer is live: a Flink streaming job reads Avro pitch events from Kafka and writes them to an Iceberg `bronze.pitches` table on MinIO, queryable from DuckDB. Streaming jobs for fatigue / leverage / matchup signals, alert orchestrator, silver / gold layers, and the dashboard are not yet implemented.
+Milestone 1 is closed: the bronze lakehouse layer is live. A Flink streaming job reads Avro pitch events from Kafka and writes them to an Iceberg `bronze.pitches` table on MinIO, queryable from DuckDB.
+
+Milestone 2 starts on 2026-05-04 and focuses on the silver layer plus an initial pitcher workload/fatigue signal. Streaming jobs for live fatigue/matchup signals, alert orchestrator, gold layer, and the dashboard are not yet implemented.
 
 ## The thesis
 
@@ -61,12 +63,12 @@ See `infra/docker/README.md` for what each service does and why.
 
 ## Roadmap
 
-- **Phase 0** — scaffolding, replay engine, local infra up
-- **Phase 1** — Flink jobs for fatigue, leverage, matchup, alert orchestrator, live dashboard
-- **Phase 2** — medallion in Iceberg, dbt incremental, quality checks
-- **Phase 3** — reconciliation mart, delta dashboard, first case studies
-- **Phase 4** — OpenLineage end to end, Grafana SLAs, Terraform cloud deploy
-- **Phase 5** — benchmarks, Medium article, portfolio update
+- **Milestone 1** — bronze lakehouse foundation, closed on 2026-05-01
+- **Milestone 2** — silver layer and initial pitcher workload/fatigue signal
+- **Milestone 3** — stationarity mini-probe and governance writeup
+- **Milestone 4** — live streaming signals and alert orchestration
+- **Milestone 5** — serving marts, dashboard views, and reconciliation case studies
+- **Milestone 6** — cloud deployment, lineage, observability, and benchmark writeup
 
 ## KPIs
 

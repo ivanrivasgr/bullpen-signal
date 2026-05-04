@@ -1,42 +1,55 @@
 # Commit plan
 
-A suggested sequence for landing this repo as a series of real commits
-rather than one giant initial drop. Each item is one commit; most are
-under 30 minutes of adjust-and-push work.
+A suggested sequence for landing Bullpen Signal as a series of real commits
+rather than one giant drop. Each item is one coherent commit with a small
+behavioral or documentation surface.
 
-Make it your own — renaming, reordering, dropping items, merging items,
-adding items. Anything except squashing to a single commit.
+Make it your own: renaming, reordering, dropping items, merging items, and
+adding items are all fine. Avoid squashing the project into a single commit.
 
-## Phase 0 — scaffolding
+## Milestone 1 - bronze lakehouse
 
-1. **chore: repo scaffolding** — README, LICENSE, `.gitignore`, `pyproject.toml`, `Makefile`, `.env.example`, directory skeleton with `.gitkeep` files.
-2. **docs: ADRs 1–3** — dual-path, Redpanda, Iceberg.
-3. **infra: local docker stack** — `infra/docker/docker-compose.yml`, `prometheus.yml`, its README. Confirm `make up` and `make down` work on your machine before committing.
-4. **feat(ingestion): event models and config** — `events.py`, `config.py`, `mapping.py`, `producer.py`. No runner yet.
-5. **feat(ingestion): statcast source** — `statcast_source.py` with synthesized event times. Include ADR 0006.
-6. **feat(ingestion): statsapi source** — `statsapi_source.py` (graceful-degradation lookups).
-7. **feat(ingestion): noise injector** — `ingestion/noise_injector/__init__.py` plus the noise injector unit tests. First commit that adds test coverage.
-8. **feat(ingestion): replay runner CLI** — `run.py` wiring everything together. Try a `--dry-run` locally before pushing.
-9. **test: mapping unit tests** — adds `test_mapping.py`.
-10. **ci: lint and unit tests on push** — `.github/workflows/ci.yml`.
-11. **docs: architecture overview** — `docs/architecture/overview.md`, ADRs 4–6.
-12. **feat(streaming): Avro schemas** — pitches, game state, corrections, alerts.
-13. **feat(streaming): flink job specs** — READMEs in each job directory. Deliberately no code; the spec earns its own commit.
-14. **feat(batch): dbt project scaffold** — `dbt_project.yml`, `profiles.example.yml`, staging sources and `stg_pitches.sql`, intermediate window, marts and reconciliation READMEs.
-15. **feat(apps): streamlit dashboard placeholder** — `apps/dashboard/main.py` and its README.
-16. **docs: case studies template** — `docs/case_studies/README.md` and `_template.md`.
+Closed on 2026-05-01.
 
-## Phase 1 — first moving parts
+Delivered:
 
-Suggested direction, not a strict script:
+1. Repository scaffolding, local Docker stack, and CI.
+2. Replay engine event models, sources, noise injection, and dry-run runner.
+3. Avro schemas and Schema Registry integration.
+4. PyFlink smoke job reading Kafka Avro pitch events.
+5. Event-time watermarks with bounded out-of-orderness.
+6. Parallel smoke execution and keyed count output.
+7. Bronze Iceberg table definition as code.
+8. Flink StatementSet branch writing decoded pitches to `bronze.pitches`.
+9. DuckDB inspection helper over PyIceberg snapshot reads.
+10. Integration coverage for Kafka -> Flink -> Iceberg bronze writes.
+11. Milestone 1 architecture docs, ADRs, and public summary draft.
 
-17. Flink Kafka source wired up; end-to-end pitch count sink for smoke.
-18. `fatigue` job first pass — pitch count state only.
-19. `fatigue` job v2 — velocity and spin deltas.
-20. `leverage` job first pass — broadcast state for the LI lookup.
-21. `matchup` job first pass — pitcher pitch-mix state only.
-22. `alert_orchestrator` rule-based v1.
-23. Dashboard live tab wired to `alerts.v1`.
+## Milestone 2 - silver layer + initial fatigue signal
 
-Each of those is a LinkedIn-sized chunk. Post-worthy individually, stronger
-as a sequence.
+Target window: 2026-05-04 through 2026-05-08.
+
+Planned commits:
+
+1. Clean milestone vocabulary in project docs.
+2. Plan the silver-layer milestone and initial fatigue signal.
+3. Record silver design decisions and dbt-on-DuckDB engine choice.
+4. Define silver Iceberg schemas as code.
+5. Scaffold the dbt-duckdb project.
+6. Build `silver.pitch_events` from `bronze.pitches`.
+7. Add integration coverage for bronze -> silver pitch events.
+8. Build `silver.pitcher_game_fatigue`.
+9. Add integration coverage for fatigue buckets.
+10. Add end-to-end bronze -> silver -> fatigue coverage.
+11. Close the milestone with docs and demo queries.
+
+## Later milestones
+
+Later milestones should stay explicit and bounded:
+
+- Live streaming fatigue, matchup, and decision-support signals.
+- Alert orchestration.
+- Gold/mart tables for serving and reconciliation.
+- Dashboard views backed by real data.
+- Stationarity mini-probe for the public governance commitment.
+- Cloud deployment and lineage/observability hardening.
