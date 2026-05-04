@@ -13,3 +13,6 @@ new ADR that supersedes the old one, not an edit.
 - [0005 — DuckDB as the Phase 0 dbt target](0005-duckdb-phase0-target.md)
 - [0006 — Synthesized event times in the replay engine](0006-synthesized-event-times.md)
 - [0007 — How machine learning fits in Bullpen Signal](0007-ml-provenance.md)
+- [0008 - Silver design decisions](0008-silver-design-decisions.md)
+- [0009 - dbt on DuckDB as the local silver engine](0009-dbt-on-duckdb-local-engine.md)
+- [0012 - Streaming foundation decisions](0012-streaming-foundation-decisions.md)
