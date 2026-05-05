@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: silver_pitch_events
+    description: Normalized pitch-level analytical table derived from bronze.pitches.
+    columns:
+      - name: game_pk
+        description: MLB game identifier.
+      - name: at_bat_number
+        description: Plate appearance sequence within the game.
+      - name: pitch_number
+        description: Pitch sequence within the plate appearance.
+      - name: event_time
+        description: Event timestamp used for analytical ordering.
+      - name: event_day
+        description: Calendar day derived from event_time.
+      - name: is_late_arrival
+        description: Replay-engine provenance flag preserved from bronze.
+      - name: is_duplicate
+        description: Replay-engine provenance flag preserved from bronze.
+      - name: correction_of
+        description: Replay-engine correction pointer preserved from bronze.
+      - name: ingestion_time
+        description: Lakehouse audit timestamp.
+      - name: kafka_partition
+        description: Kafka partition for source reconciliation.
+      - name: source_offset
+        description: Kafka offset scoped to kafka_partition.
+
+  - name: silver_pitcher_game_fatigue
+    description: Game/pitcher workload snapshot with initial fatigue bucket.
+    columns:
+      - name: game_pk
+        description: MLB game identifier.
+      - name: pitcher_id
+        description: MLB player identifier for the pitcher.
+      - name: pitch_count
+        description: Non-duplicate pitch count for this pitcher in this game.
+      - name: fatigue_bucket
+        description: "Placeholder workload bucket: low, medium, or high."

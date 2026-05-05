@@ -1,0 +1,36 @@
+version: 2
+
+sources:
+  - name: bronze
+    schema: bronze
+    description: Bronze Iceberg tables produced by the local streaming path.
+    tables:
+      - name: pitches
+        description: Current Iceberg snapshot for decoded pitch events written by Flink.
+        meta:
+          external_location: "{{ var('bronze_pitches_location') }}"
+        columns:
+          - name: event_time
+            tests:
+              - not_null
+          - name: game_pk
+            tests:
+              - not_null
+          - name: at_bat_number
+            tests:
+              - not_null
+          - name: pitch_number
+            tests:
+              - not_null
+          - name: pitcher_id
+            tests:
+              - not_null
+          - name: ingestion_time
+            tests:
+              - not_null
+          - name: kafka_partition
+            tests:
+              - not_null
+          - name: source_offset
+            tests:
+              - not_null

@@ -1,0 +1,21 @@
+name: bullpen_signal
+version: 0.1.0
+config-version: 2
+
+profile: bullpen_signal_local
+
+model-paths:
+  - models
+test-paths:
+  - tests
+target-path: target
+clean-targets:
+  - target
+  - dbt_packages
+
+models:
+  bullpen_signal:
+    silver:
+      +schema: silver
+    marts:
+      +schema: marts

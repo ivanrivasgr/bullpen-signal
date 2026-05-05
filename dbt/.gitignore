@@ -1,0 +1,6 @@
+profiles.yml
+.iceberg_sources.json
+target/
+dbt_packages/
+*.duckdb
+*.duckdb.wal
