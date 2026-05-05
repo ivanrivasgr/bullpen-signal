@@ -55,6 +55,25 @@ roster-churn profiles. If the probe finds the operating point drifts
 materially, the thresholds will be revisited as part of governance work, not
 as a tuning exercise.
 
+## Out Of Scope For Silver Layer
+
+The silver layer captures pitch-level analytical data and pitcher-game workload
+signals derived directly from `bronze.pitches`. The following are intentionally
+excluded from silver and will be computed externally when needed:
+
+- **Roster-churn classification per pitcher.** Determining whether a given
+  `(pitcher_id, game_pk)` belongs to a roster-stable or roster-churn period
+  requires lookup against MLB roster transaction history, which is not an input
+  of `bronze.pitches`. The synthetic stationarity probe scheduled for the week
+  of 2026-05-18 through 2026-05-22 (see `docs/external_commitments.md`, entry
+  dated 2026-04-29) will compute this classification via an auxiliary table
+  joined at probe time, not in silver.
+
+- **Operating-point drift metrics for fatigue thresholds.** Drift analysis
+  comparing activation rates across roster-stable and roster-churn windows is
+  governance work, not silver transformation work. It will be implemented in a
+  future milestone as part of the reconciliation/governance layer.
+
 ## Alternatives Considered
 
 ### Filter duplicate and late-arrival rows in silver
