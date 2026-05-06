@@ -24,3 +24,6 @@ if [ ! -f profiles.yml ]; then
 fi
 
 dbt run --vars "{bronze_pitches_location: '$LOCATION'}" "$@"
+
+cd "$REPO_ROOT"
+python infra/scripts/publish_dbt_silver.py "$@"

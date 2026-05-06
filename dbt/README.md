@@ -1,58 +1,36 @@
 # Bullpen Signal dbt Project
 
-This project contains the local batch modeling path for Bullpen Signal.
+This project holds the local batch transforms for Milestone 2.
 
-Milestone 2 uses dbt with DuckDB as the local execution engine. The initial
-target path is:
+The local engine is `dbt-duckdb`. The source of truth for Iceberg metadata
+remains the local Iceberg REST catalog. DuckDB reads the current bronze Iceberg
+snapshot through `iceberg_scan(...)`, using a metadata location resolved before
+the dbt run.
 
-- `bronze.pitches`
-- `silver.pitch_events`
-- `silver.pitcher_game_fatigue`
+## Local Run
 
-## Setup
+Create the ignored local profile once:
 
-Copy the example profile before running dbt:
+```bash
+cp dbt/profiles.yml.example dbt/profiles.yml
+```
 
-    cp dbt/profiles.yml.example dbt/profiles.yml
+Run models through the wrapper:
 
-The local stack must be running, and `bronze.pitches` must already contain data
-from the streaming smoke job.
+```bash
+./dbt/run.sh --select silver_pitch_events
+```
 
-## Running dbt
+The wrapper does three things:
 
-Use the wrapper from the repo root:
+1. refreshes `dbt/.iceberg_sources.json` from Iceberg REST
+2. passes the active `bronze.pitches` metadata location to dbt through vars
+3. publishes selected dbt silver outputs into the matching local Iceberg tables
 
-    ./dbt/run.sh --select silver_pitch_events
+This keeps dbt responsible for model SQL and keeps PyIceberg responsible for
+Iceberg catalog state.
 
-The wrapper first runs:
+## Requirements
 
-    python infra/scripts/refresh_iceberg_sources.py
-
-That script asks the local Iceberg REST catalog for the current
-`metadata-location` of `bronze.pitches` and writes it to
-`dbt/.iceberg_sources.json`. The wrapper then passes the resolved location to
-dbt as `bronze_pitches_location`.
-
-This vars-plus-wrapper approach is intentionally simpler than a custom Jinja
-macro that reads files at compile time. It centralizes the operational
-dependency that bronze source metadata must be refreshed before dbt runs.
-
-## Direct dbt Commands
-
-From the `dbt/` directory:
-
-    dbt deps
-    dbt parse --profiles-dir .
-
-For `dbt run`, prefer `./dbt/run.sh` from the repo root so source metadata is
-fresh.
-
-## Notes
-
-Do not commit `profiles.yml`, `.iceberg_sources.json`, `target/`,
-`dbt_packages/`, or local DuckDB database files. Those are intentionally ignored
-by `dbt/.gitignore`.
-
-dbt-duckdb does not resolve the Iceberg REST catalog directly. The local
-workflow refreshes the active Iceberg metadata path before running dbt instead
-of using a static external location.
+The local Docker stack must be running, and `bronze.pitches` must exist.
+For data-bearing runs, `bronze.pitches` must already contain rows.

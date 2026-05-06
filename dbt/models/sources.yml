@@ -8,7 +8,7 @@ sources:
       - name: pitches
         description: Current Iceberg snapshot for decoded pitch events written by Flink.
         meta:
-          external_location: "{{ var('bronze_pitches_location') }}"
+          external_location: "iceberg_scan('{{ var('bronze_pitches_location') }}')"
         columns:
           - name: event_time
             tests:

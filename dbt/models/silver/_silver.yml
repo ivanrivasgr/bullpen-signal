@@ -4,28 +4,64 @@ models:
   - name: silver_pitch_events
     description: Normalized pitch-level analytical table derived from bronze.pitches.
     columns:
-      - name: game_pk
-        description: MLB game identifier.
-      - name: at_bat_number
-        description: Plate appearance sequence within the game.
-      - name: pitch_number
-        description: Pitch sequence within the plate appearance.
       - name: event_time
         description: Event timestamp used for analytical ordering.
+        tests:
+          - not_null
       - name: event_day
         description: Calendar day derived from event_time.
+        tests:
+          - not_null
+      - name: game_pk
+        description: MLB game identifier.
+        tests:
+          - not_null
+      - name: at_bat_number
+        description: Plate appearance sequence within the game.
+        tests:
+          - not_null
+      - name: pitch_number
+        description: Pitch sequence within the plate appearance.
+        tests:
+          - not_null
+      - name: inning
+        description: Inning number.
+        tests:
+          - not_null
+      - name: inning_topbot
+        description: Half-inning marker from the source event.
+        tests:
+          - not_null
+      - name: pitcher_id
+        description: MLB player identifier for the pitcher.
+        tests:
+          - not_null
+      - name: batter_id
+        description: MLB player identifier for the batter.
+        tests:
+          - not_null
       - name: is_late_arrival
         description: Replay-engine provenance flag preserved from bronze.
+        tests:
+          - not_null
       - name: is_duplicate
         description: Replay-engine provenance flag preserved from bronze.
+        tests:
+          - not_null
       - name: correction_of
         description: Replay-engine correction pointer preserved from bronze.
       - name: ingestion_time
         description: Lakehouse audit timestamp.
+        tests:
+          - not_null
       - name: kafka_partition
         description: Kafka partition for source reconciliation.
+        tests:
+          - not_null
       - name: source_offset
         description: Kafka offset scoped to kafka_partition.
+        tests:
+          - not_null
 
   - name: silver_pitcher_game_fatigue
     description: Game/pitcher workload snapshot with initial fatigue bucket.
