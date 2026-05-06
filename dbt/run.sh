@@ -1,29 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$REPO_ROOT"
+cd "$(dirname "$0")/.."
+
+# Make repo modules (lakehouse, infra) importable when scripts run.
+export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
+
+# Disable dbt anonymous usage tracking. Snowplow tracker crashes WSL2
+# kernel 6.6.87+ on flush; documented in ADR 0009 Update 2026-05-06.
+export DBT_SEND_ANONYMOUS_USAGE_STATS=False
 
 python infra/scripts/refresh_iceberg_sources.py
 
-LOCATION="$(
-python - <<'PY'
-import json
-from pathlib import Path
+LOCATION=$(python -c "import json; print(json.load(open('dbt/.iceberg_sources.json'))['bronze.pitches']['metadata_location'])")
 
-sources = json.loads(Path("dbt/.iceberg_sources.json").read_text())
-print(sources["bronze.pitches"]["metadata_location"])
-PY
-)"
+python infra/scripts/materialize_dbt_sources.py --metadata-location "$LOCATION"
 
 cd dbt
-
-if [ ! -f profiles.yml ]; then
-  echo "profiles.yml not found. Copy profiles.yml.example to profiles.yml before running dbt."
-  exit 1
-fi
-
-dbt run --vars "{bronze_pitches_location: '$LOCATION'}" "$@"
-
-cd "$REPO_ROOT"
-python infra/scripts/publish_dbt_silver.py "$@"
+dbt run --profiles-dir . "$@"

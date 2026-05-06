@@ -8,7 +8,6 @@ local MinIO tables while still giving a simple DuckDB query surface.
 from __future__ import annotations
 
 import json
-import os
 import urllib.request
 from typing import Any
 
@@ -17,6 +16,7 @@ import pyarrow as pa
 from pyiceberg.table import StaticTable
 
 from infra.scripts.create_bronze_tables import load_local_iceberg_catalog
+from lakehouse.iceberg_io import iceberg_file_io_properties
 
 ICEBERG_REST_URI = "http://localhost:8181"
 DEFAULT_VIEW_MAP = {"bronze_pitches": "bronze.pitches"}
@@ -24,16 +24,6 @@ DEFAULT_VIEW_MAP = {"bronze_pitches": "bronze.pitches"}
 
 def _sql_literal(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
-
-
-def _iceberg_file_io_properties() -> dict[str, str]:
-    return {
-        "s3.endpoint": os.getenv("S3_ENDPOINT", "http://localhost:9000"),
-        "s3.access-key-id": os.getenv("S3_ACCESS_KEY", "minioadmin"),
-        "s3.secret-access-key": os.getenv("S3_SECRET_KEY", "minioadmin"),
-        "s3.region": os.getenv("S3_REGION", "us-east-1"),
-        "s3.path-style-access": "true",
-    }
 
 
 def _view_name_for_identifier(identifier: str) -> str:
@@ -67,7 +57,7 @@ def _arrow_table_for_identifier(identifier: str) -> pa.Table:
 def _arrow_table_for_metadata(metadata_location: str) -> pa.Table:
     table = StaticTable.from_metadata(
         metadata_location,
-        properties=_iceberg_file_io_properties(),
+        properties=iceberg_file_io_properties(),
     )
     return table.scan().to_arrow()
 

@@ -3,9 +3,16 @@
 This project holds the local batch transforms for Milestone 2.
 
 The local engine is `dbt-duckdb`. The source of truth for Iceberg metadata
-remains the local Iceberg REST catalog. DuckDB reads the current bronze Iceberg
-snapshot through `iceberg_scan(...)`, using a metadata location resolved before
-the dbt run.
+remains the local Iceberg REST catalog.
+
+DuckDB's native `iceberg_scan(...)` is not used for bronze in the local
+workflow because it currently fails on the local Iceberg manifest path with a
+DATE -> INTEGER conversion error. Instead, the wrapper reads the current
+Iceberg snapshot through PyIceberg, materializes that snapshot into the local
+DuckDB database, and runs dbt SQL over the resulting `bronze.pitches`
+relation.
+
+dbt owns model SQL. PyIceberg owns Iceberg snapshot reads.
 
 ## Local Run
 
@@ -24,11 +31,14 @@ Run models through the wrapper:
 The wrapper does three things:
 
 1. refreshes `dbt/.iceberg_sources.json` from Iceberg REST
-2. passes the active `bronze.pitches` metadata location to dbt through vars
-3. publishes selected dbt silver outputs into the matching local Iceberg tables
+2. materializes the active `bronze.pitches` snapshot into DuckDB
+3. runs the selected dbt models
 
-This keeps dbt responsible for model SQL and keeps PyIceberg responsible for
-Iceberg catalog state.
+Silver outputs currently land in the local DuckDB database
+(`~/.bullpen/dbt.duckdb`) only. Publishing silver back to Iceberg via
+PyIceberg will be added in a follow-up commit before Milestone 2 closeout.
+Until then, querying silver from outside dbt requires connecting to the same
+DuckDB file.
 
 ## Requirements
 
