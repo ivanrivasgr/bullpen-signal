@@ -1,6 +1,6 @@
 # ADR 0009 - dbt On DuckDB As The Local Silver Engine
 
-- **Status:** Accepted
+- **Status:** Accepted, amended 2026-05-06
 - **Date:** 2026-05-04
 
 ## Context
@@ -67,3 +67,60 @@ path before a cloud target is introduced.
 - dbt tests become part of the quality gate.
 - Local development stays reproducible without requiring a cloud warehouse.
 - The Iceberg registration workaround must stay documented and tested.
+
+## Update 2026-05-06
+
+Two compatibility issues appeared during Day 3 implementation. Both required
+changes to the local execution context. The dbt model SQL is unchanged.
+
+**DuckDB iceberg_scan and the DATE→INTEGER cast failure.** When `dbt run`
+attempted to read `bronze.pitches` via `iceberg_scan()`, DuckDB's Iceberg
+extension aborted with "Unimplemented type for cast (DATE → INTEGER)" while
+parsing the manifest Avro file on MinIO. The root cause is a type-coercion
+gap in the DuckDB Iceberg extension for this manifest format — not a bronze
+schema error, not a MinIO configuration error.
+
+The fix: add a materialization step before each `dbt run`.
+`infra/scripts/materialize_dbt_sources.py` reads the current `bronze.pitches`
+Iceberg snapshot via PyIceberg and writes it into the local DuckDB database as
+a native table using Arrow. dbt then reads from that DuckDB table as its
+source. The dbt source definition and all model SQL are unchanged.
+
+This shifts an assumption from the original ADR. The original assumed
+dbt-duckdb would handle Iceberg I/O on both sides via `iceberg_scan()` and
+the DuckDB Iceberg extension's write path. In practice, the read path needs
+PyIceberg materialization (this amend) and the write path will likely also
+need PyIceberg (separate amend before Milestone 2 closeout). The split is
+now: dbt owns model SQL only; PyIceberg owns Iceberg snapshot I/O on both
+read and write.
+
+**Snowplow telemetry SIGABRT on WSL2.** dbt-core 1.11.8 flushes anonymous
+usage events at end of run via a Snowplow C extension. On WSL2 kernel
+6.6.87.1-microsoft-standard, that flush crashes on connection teardown with
+SIGABRT, killing the process before any dbt result lands.
+
+Both crashes presented the same observable symptom (process abort, WSL2 shell
+drops). During investigation, two WSL host crashes occurred before the failure
+modes were separated. The Iceberg cast issue was reproducible from
+`iceberg_scan()`. The Snowplow flush issue was reproducible from `dbt parse`
+alone, with no Iceberg involved. The fix sequence reflects that separation:
+PyIceberg materialization removed the first failure path, telemetry disable
+removed the second.
+
+The fix: set `DBT_SEND_ANONYMOUS_USAGE_STATS=False` in `dbt/run.sh`. It is
+not a recommendation for team usage where upstream usage reporting has value
+and where the WSL2 kernel issue does not apply.
+
+**Trade-off: the materialization step is local-only scaffolding.** Cloud
+execution paths — Snowflake, Athena, Redshift Spectrum — read Iceberg natively
+and do not need a DuckDB materialization step before a dbt run. The same dbt
+SQL models run unchanged against those engines. Local disk doubles (Iceberg
+Parquet files plus the DuckDB native table), which is acceptable at dev and
+integration-test data volumes.
+
+**Still open before Milestone 2 closeout.** The write path — reading
+`silver.pitch_events` from DuckDB and publishing it to Iceberg as
+`silver.pitch_events` via PyIceberg — is not yet implemented. That decision
+involves schema-as-code alignment (`lakehouse/schemas/silver_pitch_events.py`
+already exists), partition spec, and CREATE TABLE vs append behavior. A
+separate ADR amend will document it before Milestone 2 closes.
