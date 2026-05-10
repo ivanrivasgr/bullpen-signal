@@ -25,3 +25,9 @@ python infra/scripts/materialize_dbt_sources.py --metadata-location "$LOCATION"
 
 cd dbt
 dbt run --profiles-dir . "$@"
+
+cd ..
+
+if [[ "${BULLPEN_SKIP_PUBLISH:-0}" != "1" ]]; then
+    python infra/scripts/publish_dbt_silver.py
+fi

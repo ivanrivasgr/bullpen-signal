@@ -170,3 +170,40 @@ write directly to DuckDB (without PyIceberg writes) continue to run from
 3. `.venv-batch/bin/python -c "import pyiceberg_core; print('ok')"` prints `ok`.
 4. `./dbt/run.sh --select silver_pitch_events` runs end-to-end using `.venv-batch`.
 5. `source .venv/bin/activate && pytest tests/unit/ --no-cov -q` stays green.
+
+## Update 2026-05-10 — Silver Publish Path
+
+**Context.** The 2026-05-06 amend documented that the silver write path (DuckDB
+-> Iceberg) was still open. This amend closes it.
+
+**Decision.** `infra/scripts/publish_dbt_silver.py` reads each silver table from
+the local DuckDB database as an Arrow table, verifies that all columns required
+by the Iceberg schema are present, casts types where necessary, and then writes
+to the Iceberg REST catalog.
+
+Default behavior is append. `--full-refresh` overwrites all existing data
+(useful for development and CI resets). `BULLPEN_SKIP_PUBLISH=1` suppresses the
+publish step from `dbt/run.sh` without touching the dbt run itself.
+
+**Schema verification.** Before writing, the script calls `schema_to_pyarrow`
+on the Iceberg table schema and compares column names to the DuckDB result. A
+missing required column raises a descriptive error before any write is attempted.
+Type mismatches are handled by Arrow's cast path; incompatible casts also raise
+before writing.
+
+**Tables published.**
+- `silver.silver_pitch_events` (DuckDB) → `silver.pitch_events` (Iceberg)
+- `silver.silver_pitcher_game_fatigue` (DuckDB) → `silver.pitcher_game_fatigue` (Iceberg)
+
+**Integration with run.sh.** `dbt/run.sh` calls `publish_dbt_silver.py` after
+`dbt run` completes. The publish uses `.venv-batch` (already activated by
+`run.sh`). Setting `BULLPEN_SKIP_PUBLISH=1` skips publish while keeping dbt run
+intact.
+
+**Trade-offs.**
+- Append-by-default matches the expected production pattern (incremental dbt
+  runs append new rows; full-refresh is an explicit opt-in).
+- Schema verification adds a safety check but requires the Iceberg table to
+  already exist (created by `python infra/scripts/create_silver_tables.py`).
+- The publish step adds latency to each `./dbt/run.sh` call. At development
+  data volumes (hundreds of rows) the overhead is negligible.
