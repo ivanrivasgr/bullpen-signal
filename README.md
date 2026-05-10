@@ -6,9 +6,9 @@ What real-time gets you first, what batch gets you right, and why a manager need
 
 ## Status
 
-Milestone 1 is closed: the bronze lakehouse layer is live. A Flink streaming job reads Avro pitch events from Kafka and writes them to an Iceberg `bronze.pitches` table on MinIO, queryable from DuckDB.
+Milestone 2 closed (2026-05-10): silver lakehouse layer with normalized pitch events and pitcher workload fatigue signal. Both materializations live in Apache Iceberg via PyIceberg-managed snapshots and in DuckDB local for development queries. dbt-duckdb owns model SQL; PyIceberg owns Iceberg snapshot I/O on read and write paths. See `docs/milestones/milestone_2_closeout.md` for delivery details and known technical debt.
 
-Milestone 2 starts on 2026-05-04 and focuses on the silver layer plus an initial pitcher workload/fatigue signal. Streaming jobs for live fatigue/matchup signals, alert orchestrator, gold layer, and the dashboard are not yet implemented.
+Not yet implemented: streaming fatigue updates, alert orchestrator, gold layer marts, dashboard. CI integration job (Docker-based orchestration) tracked as known debt.
 
 ## The thesis
 
