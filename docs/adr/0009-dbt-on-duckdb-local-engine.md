@@ -1,6 +1,6 @@
 # ADR 0009 - dbt On DuckDB As The Local Silver Engine
 
-- **Status:** Accepted, amended 2026-05-06
+- **Status:** Accepted, amended 2026-05-06, amended 2026-05-10
 - **Date:** 2026-05-04
 
 ## Context
@@ -124,3 +124,49 @@ integration-test data volumes.
 involves schema-as-code alignment (`lakehouse/schemas/silver_pitch_events.py`
 already exists), partition spec, and CREATE TABLE vs append behavior. A
 separate ADR amend will document it before Milestone 2 closes.
+
+## Update 2026-05-10 — Venv Split
+
+**Symptom.** PyIceberg 0.11.1 write path requires pyarrow>=17. The existing
+`.venv` pins pyarrow<17 because apache-beam 2.61 (used by the Flink streaming
+path) declares `pyarrow<17` as an upper bound. Installing pyarrow>=17 into
+`.venv` breaks apache-beam imports.
+
+**Decision.** Split virtual environments rather than downgrade either
+dependency. The existing `.venv` becomes the streaming venv (PyFlink +
+apache-beam + pyarrow<17). A new `.venv-batch` carries the batch pipeline
+dependencies: dbt-core, dbt-duckdb, duckdb, pyiceberg[s3fs,pyiceberg-core],
+and pyarrow>=17.
+
+`dbt/run.sh` activates `.venv-batch` at startup and aborts with an actionable
+error message if the venv is absent (`make venv-batch`). Integration tests that
+write directly to DuckDB (without PyIceberg writes) continue to run from
+`.venv` and do not require `.venv-batch`.
+
+**Alternatives considered.**
+
+- Downgrade PyIceberg to a version compatible with pyarrow<17: rejected. PyIceberg
+  0.10.x write path has known correctness issues with the REST catalog; the
+  team already validated 0.11.1 against the local MinIO stack.
+- Downgrade apache-beam to relax the pyarrow upper bound: rejected. The
+  streaming Milestone 1 code is frozen; touching its deps risks regression in
+  a tested path.
+- Docker-isolate the batch run: deferred. Adds operational overhead before the
+  project has a CI environment. Revisit when a cloud target is introduced.
+
+**Trade-offs.**
+
+- Operational cost: two active venvs mean two `pip install` surfaces to keep
+  up to date. Medium cost, acceptable at this team size and project stage.
+- Developer experience: `make venv-batch` is the single setup step. `dbt/run.sh`
+  provides a clear error if it is skipped.
+- Scope discipline: `.venv` (Milestone 1 streaming code) is never modified by
+  this change. Streaming tests remain green on the original venv.
+
+**Verification.**
+
+1. `make venv-batch` completes without error.
+2. `.venv-batch/bin/python -c "import pyiceberg, pyarrow; print(pyiceberg.__version__, pyarrow.__version__)"` prints `0.11.x  17.x`.
+3. `.venv-batch/bin/python -c "import pyiceberg_core; print('ok')"` prints `ok`.
+4. `./dbt/run.sh --select silver_pitch_events` runs end-to-end using `.venv-batch`.
+5. `source .venv/bin/activate && pytest tests/unit/ --no-cov -q` stays green.

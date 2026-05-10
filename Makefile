@@ -1,4 +1,4 @@
-.PHONY: help up down logs ps replay dashboard test lint format clean bootstrap topics bootstrap-iceberg
+.PHONY: help up down logs ps replay dashboard test lint format clean bootstrap topics bootstrap-iceberg venv-batch
 
 help:
 	@echo "Bullpen Signal - dev commands"
@@ -20,6 +20,11 @@ help:
 bootstrap:
 	python -m venv .venv
 	. .venv/bin/activate && pip install --upgrade pip && pip install -e ".[dev]"
+
+venv-batch:
+	python3.11 -m venv .venv-batch
+	.venv-batch/bin/pip install --upgrade pip
+	.venv-batch/bin/pip install -r requirements-batch.txt
 
 up:
 	cd infra/docker && docker compose up -d

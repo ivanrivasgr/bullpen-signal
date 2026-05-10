@@ -127,6 +127,13 @@ across two historical Statcast windows with different roster-churn profiles.
 Milestone 2 does not run the probe. It makes the table stable enough that the
 probe can run without re-architecting the silver layer.
 
+## Implementation Note — Venv Split (2026-05-10)
+
+The batch pipeline runs in a dedicated `.venv-batch` virtual environment
+(dbt-duckdb + PyIceberg + pyarrow>=17). The streaming `.venv` retains
+pyarrow<17 for apache-beam compatibility. `dbt/run.sh` activates `.venv-batch`
+automatically. See ADR 0009 Update 2026-05-10 for rationale.
+
 ## Quality Bar
 
 Milestone 2 is complete only when:

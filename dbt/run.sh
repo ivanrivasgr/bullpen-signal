@@ -3,7 +3,14 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# Make repo modules (lakehouse, infra) importable when scripts run.
+# Activate batch venv (PyIceberg + pyarrow>=17).
+# The streaming .venv pins pyarrow<17 for apache-beam; this venv is separate.
+if [ ! -d .venv-batch ]; then
+    echo "ERROR: .venv-batch does not exist. Run: make venv-batch" >&2
+    exit 1
+fi
+source .venv-batch/bin/activate
+
 export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
 
 # Disable dbt anonymous usage tracking. Snowplow tracker crashes WSL2
