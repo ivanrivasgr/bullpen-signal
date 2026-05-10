@@ -68,9 +68,27 @@ models:
     columns:
       - name: game_pk
         description: MLB game identifier.
+        tests:
+          - not_null
       - name: pitcher_id
         description: MLB player identifier for the pitcher.
+        tests:
+          - not_null
       - name: pitch_count
         description: Non-duplicate pitch count for this pitcher in this game.
+        tests:
+          - not_null
+      - name: first_pitch_time
+        description: Timestamp of the first non-duplicate pitch thrown by this pitcher in this game.
+        tests:
+          - not_null
+      - name: last_pitch_time
+        description: Timestamp of the last non-duplicate pitch thrown by this pitcher in this game.
+        tests:
+          - not_null
       - name: fatigue_bucket
-        description: "Placeholder workload bucket: low, medium, or high."
+        description: "Workload bucket per ADR 0008: low (<25), medium (25-49), high (>=50)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['low', 'medium', 'high']
