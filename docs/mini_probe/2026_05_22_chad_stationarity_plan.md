@@ -65,3 +65,17 @@ If activation rates drift materially between windows of similar workload distrib
 - Reconciliation taxonomy validation (Chad's earlier framework — separate scope).
 - Threshold drift over multiple seasons (would require 3+ years of data).
 - Recommendation of adaptive thresholds (premature without more windows).
+
+## Execution log
+
+- **Date executed:** 2026-05-12
+- **Script:** `scripts/mini_probe/compute_stationarity.py`
+- **Outputs:** `data/processed/mini_probe/` (gitignored — regenerable from script)
+  - `window_april_per_game.csv`
+  - `window_september_per_game.csv`
+  - `activation_rates.csv`
+  - `per_pitcher_shift.csv`
+  - `shift_summary.csv`
+  - `bucket_reassignment.csv`
+- **Status:** compute executed successfully
+- **Cohort confirmed:** 293 pitchers in both windows (within expected 200–350 range)
