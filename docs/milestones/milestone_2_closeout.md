@@ -35,25 +35,25 @@
 
 | SHA | Title |
 |-----|-------|
-| `165b3db` | feat(deps): split venv-batch for pyiceberg writes |
+| `324b8a7` | feat(deps): split venv-batch for pyiceberg writes |
 
 ### silver_pitcher_game_fatigue model
 
 | SHA | Title |
 |-----|-------|
-| `ed99230` | feat(silver): pitcher game fatigue model with workload threshold buckets |
+| `cec05a9` | feat(silver): pitcher game fatigue model with workload threshold buckets |
 
 ### silver → Iceberg publish
 
 | SHA | Title |
 |-----|-------|
-| `4a36118` | feat(lakehouse): publish silver outputs from duckdb to iceberg |
+| `8e87fcb` | feat(lakehouse): publish silver outputs from duckdb to iceberg |
 
 ### End-to-end integration test + closeout
 
 | SHA | Title |
 |-----|-------|
-| `6071fb0` | test(integration): bronze to silver to fatigue end-to-end |
+| `d7fdd28` | test(integration): bronze to silver to fatigue end-to-end |
 | `(this commit)` | docs: milestone 2 closeout |
 
 ## Metrics
