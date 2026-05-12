@@ -97,3 +97,6 @@ pybaseball_cache/
 
 # Raw Statcast pulls for mini-probe (regenerable via pybaseball)
 data/raw/
+
+# Local Claude Code config (not for public repo)
+.claude/
