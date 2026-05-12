@@ -94,3 +94,6 @@ logs/
 
 # pybaseball cache
 pybaseball_cache/
+
+# Raw Statcast pulls for mini-probe (regenerable via pybaseball)
+data/raw/
