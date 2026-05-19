@@ -37,6 +37,9 @@ relevant phase docs, ADRs, issues, or code commits.
 ## EXT-2026-04-29-001 - Stationarity Probe For Suppressed Signal Governance
 
 **Status:** delivered
+**Delivered:** 2026-05-15
+**Output:** `docs/mini_probe/2026_05_22_chad_stationarity_writeup.md`
+**Counterparty response:** `docs/mini_probe/2026_05_19_chad_response.md`
 
 **Date captured:** 2026-04-29
 
