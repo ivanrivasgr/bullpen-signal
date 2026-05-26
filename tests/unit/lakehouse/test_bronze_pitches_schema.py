@@ -1,5 +1,5 @@
 from pyiceberg.transforms import DayTransform
-from pyiceberg.types import IntegerType, LongType, TimestamptzType
+from pyiceberg.types import IntegerType, LongType, StringType, TimestamptzType
 
 from lakehouse.schemas.bronze_pitches import (
     BRONZE_PITCHES_IDENTIFIER,
@@ -21,7 +21,7 @@ def test_bronze_pitches_identifier_and_location_are_stable() -> None:
 def test_bronze_pitches_schema_uses_event_time_and_audit_metadata() -> None:
     fields = _fields_by_name()
 
-    assert len(fields) == 30
+    assert len(fields) == 31
     assert "ingest_time" not in fields
     assert fields["event_time"].field_id == 1
     assert fields["event_time"].field_type == TimestamptzType()
@@ -30,6 +30,10 @@ def test_bronze_pitches_schema_uses_event_time_and_audit_metadata() -> None:
     assert fields["source_offset"].field_type == LongType()
     assert fields["kafka_partition"].field_type == IntegerType()
     assert fields["kafka_partition"].required is True
+    # ADR 0013: BATTER_UNCERTAIN state representation.
+    assert fields["lineup_state"].field_id == 32
+    assert fields["lineup_state"].field_type == StringType()
+    assert fields["lineup_state"].required is False
 
 
 def test_bronze_pitches_leaves_retired_field_id_two_unused() -> None:

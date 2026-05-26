@@ -45,6 +45,10 @@ class PitchEvent(BaseModel):
     events: str | None = None
     home_score: int
     away_score: int
+    # Epistemic state of batter identity at emission time. See ADR 0013.
+    # One of: "confirmed", "uncertain", "projected". Default keeps historical
+    # replay traffic backward-compatible — pre-Phase-2 events implicitly mean confirmed.
+    lineup_state: Literal["confirmed", "uncertain", "projected"] = "confirmed"
     # Reserved for the noise injector.
     is_late_arrival: bool = False
     is_duplicate: bool = False

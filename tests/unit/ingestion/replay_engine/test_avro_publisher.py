@@ -98,6 +98,7 @@ class TestPitchEventConversion:
             "is_late_arrival",
             "is_duplicate",
             "correction_of",
+            "lineup_state",
         }
         result = pitch_event_to_avro_dict(_make_pitch())
         assert set(result.keys()) == avsc_fields

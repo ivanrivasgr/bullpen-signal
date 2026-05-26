@@ -171,6 +171,12 @@
         "string"
       ],
       "default": null
+    },
+    {
+      "name": "lineup_state",
+      "type": "string",
+      "default": "confirmed",
+      "doc": "Epistemic state of batter identity at emission time. One of: confirmed, uncertain, projected. See ADR 0013."
     }
   ]
 }

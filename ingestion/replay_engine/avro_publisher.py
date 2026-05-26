@@ -77,6 +77,7 @@ def pitch_event_to_avro_dict(event: PitchEvent) -> dict[str, Any]:
         "is_late_arrival": event.is_late_arrival,
         "is_duplicate": event.is_duplicate,
         "correction_of": event.correction_of,
+        "lineup_state": event.lineup_state,
     }
 
 
