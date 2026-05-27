@@ -7,7 +7,7 @@ increments), and game start/end.
 
 What Statcast cannot carry on its own: pinch-hit events (require the manager's
 intent + batter lookup) and lineup confirmations (require StatsAPI's lineup
-feed). Those belong in Phase 2 alongside the lineup-latency work (ADR 0009).
+feed). Those belong in Phase 2 alongside the lineup-latency work (ADR 0013).
 
 This module is intentionally a pure function: it takes a pair of consecutive
 pitches (or None for the first pitch of a game) and returns a list of
