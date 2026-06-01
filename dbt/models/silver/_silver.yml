@@ -92,3 +92,35 @@ models:
           - not_null
           - accepted_values:
               values: ['low', 'medium', 'high']
+
+  - name: silver_matchup_events
+    description: |
+      Per-pitch matchup view derived from silver_pitch_events plus pitcher
+      fatigue context. Phase 2 Milestone 2. Handedness columns are
+      populated on milestone day 2 once the player_handedness seed lands;
+      until then they are nullable. See ADR 0016 for the design.
+    columns:
+      - name: event_time
+        tests:
+          - not_null
+      - name: game_pk
+        tests:
+          - not_null
+      - name: at_bat_number
+        tests:
+          - not_null
+      - name: pitch_number
+        tests:
+          - not_null
+      - name: pitcher_id
+        tests:
+          - not_null
+      - name: batter_id
+        tests:
+          - not_null
+      - name: pitcher_fatigue_bucket
+        description: |
+          Pitcher fatigue bucket joined from silver_pitcher_game_fatigue
+          at the (game_pk, pitcher_id) grain. May be NULL for pitches in
+          games where the pitcher has not yet accumulated enough pitches
+          to be in the fatigue table.
