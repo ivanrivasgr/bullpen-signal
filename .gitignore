@@ -44,6 +44,8 @@ ENV/
 # Data
 data/
 *.csv
+# Exception: dbt seeds are versioned source data, not output
+!dbt/seeds/*.csv
 *.parquet
 *.db
 *.duckdb

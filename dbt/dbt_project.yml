@@ -19,3 +19,12 @@ models:
       +schema: silver
     marts:
       +schema: marts
+
+seeds:
+  bullpen_signal:
+    +schema: seeds
+    player_handedness:
+      +column_types:
+        player_id: bigint
+        role: varchar
+        hand: varchar

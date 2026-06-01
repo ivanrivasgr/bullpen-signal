@@ -1,0 +1,29 @@
+version: 2
+
+seeds:
+  - name: player_handedness
+    description: |
+      Static handedness lookup per player and role. Pitchers and batters
+      get separate rows so two-way players (e.g., Shohei Ohtani) can have
+      different throwing and batting hands. Generated from the Statcast
+      parquet files in data/raw/ (the same source the stationarity probe
+      consumed). Regenerate when those parquets change. See ADR 0016.
+    columns:
+      - name: player_id
+        description: MLB player ID, joinable to silver_matchup_events.pitcher_id and batter_id.
+        tests:
+          - not_null
+      - name: role
+        description: Either 'pitcher' or 'batter'. Disambiguates two-way players.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['pitcher', 'batter']
+      - name: hand
+        description: "L (left) or R (right). Statcast convention."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['L', 'R']
