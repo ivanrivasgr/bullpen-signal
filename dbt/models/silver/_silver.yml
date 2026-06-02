@@ -124,3 +124,16 @@ models:
           at the (game_pk, pitcher_id) grain. May be NULL for pitches in
           games where the pitcher has not yet accumulated enough pitches
           to be in the fatigue table.
+      - name: pitcher_handedness
+        description: |
+          'L' or 'R', joined from player_handedness seed where role='pitcher'.
+          NULL only for player IDs missing from the seed.
+      - name: batter_handedness
+        description: |
+          'L' or 'R', joined from player_handedness seed where role='batter'.
+          NULL only for player IDs missing from the seed.
+      - name: handedness_matchup
+        description: |
+          Concatenated matchup of the form 'R_vs_L' (pitcher_vs_batter).
+          NULL whenever either pitcher_handedness or batter_handedness is
+          NULL — a partial matchup is not a usable signal.

@@ -13,11 +13,12 @@
 -- pitch-level identifiers needed to join back to silver_pitch_events for
 -- everything else).
 --
--- Handedness columns are populated as NULL in this initial slice. The
--- player_handedness seed and join lands on 2026-06-02 (milestone day 2),
--- at which point handedness will be wired in via macro or seed-driven
--- join. Until then, downstream consumers must treat handedness columns
--- as nullable and not panic.
+-- Handedness columns are populated from the player_handedness seed.
+-- pitcher_handedness and batter_handedness may still be NULL for player
+-- IDs not present in the seed (rare — the seed covers the full cohort of
+-- 657 pitchers and 609 batters from the 2024 April + September windows).
+-- handedness_matchup is NULL whenever either side is NULL, by design — a
+-- partial matchup is not a usable signal.
 --
 -- fatigue_bucket_join carries the pitcher's fatigue bucket from
 -- silver_pitcher_game_fatigue at the (game_pk, pitcher_id) grain. This
@@ -57,6 +58,22 @@ fatigue AS (
         pitcher_id,
         fatigue_bucket
     FROM {{ ref("silver_pitcher_game_fatigue") }}
+),
+
+pitcher_hands AS (
+    SELECT
+        player_id AS pitcher_id,
+        hand AS pitcher_handedness
+    FROM {{ ref("player_handedness") }}
+    WHERE role = 'pitcher'
+),
+
+batter_hands AS (
+    SELECT
+        player_id AS batter_id,
+        hand AS batter_handedness
+    FROM {{ ref("player_handedness") }}
+    WHERE role = 'batter'
 )
 
 SELECT
@@ -69,10 +86,16 @@ SELECT
     pe.inning_topbot,
     pe.pitcher_id,
     pe.batter_id,
-    -- Handedness columns populated on milestone day 2 via player_handedness seed.
-    CAST(NULL AS VARCHAR) AS pitcher_handedness,
-    CAST(NULL AS VARCHAR) AS batter_handedness,
-    CAST(NULL AS VARCHAR) AS handedness_matchup,
+    -- Handedness from the player_handedness seed (ADR 0016, milestone day 2).
+    ph.pitcher_handedness,
+    bh.batter_handedness,
+    -- Concatenated matchup for downstream consumers. Reads as 'pitcher_vs_batter'.
+    -- NULL on either side propagates to NULL here, by design — a partial
+    -- matchup is not a usable matchup signal.
+    CASE
+        WHEN ph.pitcher_handedness IS NULL OR bh.batter_handedness IS NULL THEN NULL
+        ELSE ph.pitcher_handedness || '_vs_' || bh.batter_handedness
+    END AS handedness_matchup,
     -- Fatigue context joined from the pitcher-game-level signal.
     f.fatigue_bucket AS pitcher_fatigue_bucket,
     -- Audit columns inherited so downstream tests can use them directly.
@@ -85,4 +108,8 @@ FROM pitch_events AS pe
 LEFT JOIN fatigue AS f
     ON pe.game_pk = f.game_pk
     AND pe.pitcher_id = f.pitcher_id
+LEFT JOIN pitcher_hands AS ph
+    ON pe.pitcher_id = ph.pitcher_id
+LEFT JOIN batter_hands AS bh
+    ON pe.batter_id = bh.batter_id
 WHERE NOT pe.is_duplicate
