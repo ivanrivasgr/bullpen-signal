@@ -91,7 +91,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['low', 'medium', 'high']
+              arguments:
+                values: ['low', 'medium', 'high']
 
   - name: silver_matchup_events
     description: |
@@ -128,12 +129,30 @@ models:
         description: |
           'L' or 'R', joined from player_handedness seed where role='pitcher'.
           NULL only for player IDs missing from the seed.
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['L', 'R']
+              config:
+                where: "pitcher_handedness IS NOT NULL"
       - name: batter_handedness
         description: |
           'L' or 'R', joined from player_handedness seed where role='batter'.
           NULL only for player IDs missing from the seed.
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['L', 'R']
+              config:
+                where: "batter_handedness IS NOT NULL"
       - name: handedness_matchup
         description: |
           Concatenated matchup of the form 'R_vs_L' (pitcher_vs_batter).
           NULL whenever either pitcher_handedness or batter_handedness is
           NULL — a partial matchup is not a usable signal.
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['R_vs_R', 'R_vs_L', 'L_vs_R', 'L_vs_L']
+              config:
+                where: "handedness_matchup IS NOT NULL"
