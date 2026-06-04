@@ -15,11 +15,13 @@ from ingestion.replay_engine.avro_publisher import (
     _datetime_to_millis,
     correction_event_to_avro_dict,
     game_state_event_to_avro_dict,
+    matchup_revision_event_to_avro_dict,
     pitch_event_to_avro_dict,
 )
 from ingestion.replay_engine.events import (
     CorrectionEvent,
     GameStateEvent,
+    MatchupRevisionEvent,
     PitchEvent,
 )
 
@@ -176,3 +178,88 @@ class TestCorrectionEventConversion:
         }
         result = correction_event_to_avro_dict(ce)
         assert set(result.keys()) == avsc_fields
+
+
+class TestMatchupRevisionEventConversion:
+    """Coverage for matchup_revision_event_to_avro_dict.
+
+    Mirrors the patterns from TestPitchEventConversion / TestGameStateEventConversion:
+    verify every avsc field is present, datetime fields become millis,
+    and enum-like Literal fields pass through as strings.
+    """
+
+    def _make_event(self, **overrides) -> MatchupRevisionEvent:
+        base = {
+            "event_time": datetime(2024, 7, 4, 19, 30, 0, tzinfo=UTC),
+            "ingest_time": datetime(2024, 7, 4, 19, 30, 15, tzinfo=UTC),
+            "game_pk": 745123,
+            "at_bat_number": 12,
+            "pitch_number": 3,
+            "pitcher_id": 605400,
+            "batter_id": 660271,
+            "revision_type": "material_update",
+            "previous_signal_value": -0.10,
+            "current_signal_value": 0.05,
+            "previous_confidence_band": "reduced",
+            "current_confidence_band": "full",
+            "source_event_id": "lineup_confirmation:745123:2024-07-04T18:55Z",
+        }
+        base.update(overrides)
+        return MatchupRevisionEvent(**base)
+
+    def test_all_avsc_fields_are_present(self) -> None:
+        event = self._make_event()
+        result = matchup_revision_event_to_avro_dict(event)
+        expected_keys = {
+            "event_time",
+            "ingest_time",
+            "game_pk",
+            "at_bat_number",
+            "pitch_number",
+            "pitcher_id",
+            "batter_id",
+            "revision_type",
+            "previous_signal_value",
+            "current_signal_value",
+            "previous_confidence_band",
+            "current_confidence_band",
+            "source_event_id",
+        }
+        assert set(result.keys()) == expected_keys
+
+    def test_datetime_fields_become_millis(self) -> None:
+        event = self._make_event()
+        result = matchup_revision_event_to_avro_dict(event)
+        assert isinstance(result["event_time"], int)
+        assert isinstance(result["ingest_time"], int)
+        assert result["ingest_time"] > result["event_time"]
+
+    def test_revision_type_passes_through_as_string(self) -> None:
+        for revision_type in ("material_update", "baseline_confirmed", "suppressed_by_governance"):
+            event = self._make_event(revision_type=revision_type)
+            result = matchup_revision_event_to_avro_dict(event)
+            assert result["revision_type"] == revision_type
+
+    def test_signal_values_pass_through_as_floats(self) -> None:
+        event = self._make_event(previous_signal_value=-0.25, current_signal_value=0.30)
+        result = matchup_revision_event_to_avro_dict(event)
+        assert result["previous_signal_value"] == -0.25
+        assert result["current_signal_value"] == 0.30
+
+    def test_baseline_confirmed_has_equal_signal_values(self) -> None:
+        """ADR 0017: baseline_confirmed revisions carry the same signal value as before."""
+        event = self._make_event(
+            revision_type="baseline_confirmed",
+            previous_signal_value=0.05,
+            current_signal_value=0.05,
+            previous_confidence_band="reduced",
+            current_confidence_band="full",
+        )
+        result = matchup_revision_event_to_avro_dict(event)
+        assert result["previous_signal_value"] == result["current_signal_value"]
+        assert result["previous_confidence_band"] != result["current_confidence_band"]
+
+    def test_source_event_id_passes_through(self) -> None:
+        event = self._make_event(source_event_id="correction_event:abc-123")
+        result = matchup_revision_event_to_avro_dict(event)
+        assert result["source_event_id"] == "correction_event:abc-123"

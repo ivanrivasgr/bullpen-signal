@@ -98,3 +98,33 @@ class CorrectionEvent(BaseModel):
     field: str
     old_value: str | None
     new_value: str | None
+
+
+class MatchupRevisionEvent(BaseModel):
+    """A revision of a previously emitted matchup signal.
+
+    ADR 0017 defines the taxonomy. The revision carries both the previous
+    and current signal values + confidence bands so downstream consumers
+    can compute the delta without re-joining against the original emission.
+    """
+
+    event_time: datetime
+    ingest_time: datetime
+    game_pk: int
+    at_bat_number: int
+    pitch_number: int
+    pitcher_id: int
+    batter_id: int
+    revision_type: Literal["material_update", "baseline_confirmed", "suppressed_by_governance"]
+    previous_signal_value: float
+    current_signal_value: float
+    previous_confidence_band: Literal["full", "reduced", "suppressed"]
+    current_confidence_band: Literal["full", "reduced", "suppressed"]
+    source_event_id: str = Field(
+        description=(
+            "Identifier of the upstream event that triggered the revision — "
+            "lineup_confirmation event id, correction_event id, or "
+            "reconciliation batch id. Per ADR 0017, the specific cause is "
+            "recoverable from this field without inflating the taxonomy."
+        ),
+    )

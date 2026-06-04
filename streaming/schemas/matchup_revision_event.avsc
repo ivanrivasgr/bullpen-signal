@@ -1,0 +1,90 @@
+{
+  "type": "record",
+  "name": "MatchupRevisionEvent",
+  "namespace": "bullpen.signal.v1",
+  "doc": "A revision of a previously emitted matchup signal. ADR 0017 governs the taxonomy.",
+  "fields": [
+    {
+      "name": "event_time",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "When the revision was emitted (not the original pitch event time)."
+    },
+    {
+      "name": "ingest_time",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "When the revision was published by the emitter."
+    },
+    {
+      "name": "game_pk",
+      "type": "long",
+      "doc": "Natural key — references the pitch the revision applies to."
+    },
+    {
+      "name": "at_bat_number",
+      "type": "int",
+      "doc": "Natural key — references the pitch the revision applies to."
+    },
+    {
+      "name": "pitch_number",
+      "type": "int",
+      "doc": "Natural key — references the pitch the revision applies to."
+    },
+    {
+      "name": "pitcher_id",
+      "type": "long"
+    },
+    {
+      "name": "batter_id",
+      "type": "long",
+      "doc": "For material_update revisions triggered by lineup confirmation, this is the actual batter that superseded the projected one."
+    },
+    {
+      "name": "revision_type",
+      "type": {
+        "type": "enum",
+        "name": "RevisionType",
+        "symbols": ["material_update", "baseline_confirmed", "suppressed_by_governance"]
+      },
+      "doc": "ADR 0017 taxonomy. material_update changes the signal_value; baseline_confirmed re-emits with higher confidence and identical value; suppressed_by_governance lives only in the reconciliation ledger."
+    },
+    {
+      "name": "previous_signal_value",
+      "type": "double",
+      "doc": "The signal_value from the emission this revision supersedes."
+    },
+    {
+      "name": "current_signal_value",
+      "type": "double",
+      "doc": "The signal_value carried by this revision. Equals previous_signal_value for baseline_confirmed and suppressed_by_governance."
+    },
+    {
+      "name": "previous_confidence_band",
+      "type": {
+        "type": "enum",
+        "name": "PreviousConfidenceBand",
+        "symbols": ["full", "reduced", "suppressed"]
+      },
+      "doc": "confidence_band of the emission being superseded."
+    },
+    {
+      "name": "current_confidence_band",
+      "type": {
+        "type": "enum",
+        "name": "CurrentConfidenceBand",
+        "symbols": ["full", "reduced", "suppressed"]
+      },
+      "doc": "confidence_band carried by this revision."
+    },
+    {
+      "name": "source_event_id",
+      "type": "string",
+      "doc": "Identifier of the upstream event that triggered the revision — lineup_confirmation event id, correction_event id, or reconciliation batch id. Per ADR 0017, the specific cause is recoverable from this field without inflating the taxonomy."
+    }
+  ]
+}

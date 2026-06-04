@@ -23,6 +23,7 @@ from confluent_kafka.serialization import MessageField, SerializationContext
 from ingestion.replay_engine.events import (
     CorrectionEvent,
     GameStateEvent,
+    MatchupRevisionEvent,
     PitchEvent,
 )
 from streaming.schema_registry import SchemaRegistryClient
@@ -34,6 +35,7 @@ _DEFAULT_SCHEMA_DIR = Path("streaming/schemas")
 _PITCH_EVENT_SCHEMA = _DEFAULT_SCHEMA_DIR / "pitch_event.avsc"
 _GAME_STATE_SCHEMA = _DEFAULT_SCHEMA_DIR / "game_state_event.avsc"
 _CORRECTION_SCHEMA = _DEFAULT_SCHEMA_DIR / "correction_event.avsc"
+_MATCHUP_REVISION_SCHEMA = _DEFAULT_SCHEMA_DIR / "matchup_revision_event.avsc"
 
 
 def _datetime_to_millis(dt: datetime) -> int:
@@ -111,6 +113,25 @@ def correction_event_to_avro_dict(event: CorrectionEvent) -> dict[str, Any]:
     }
 
 
+def matchup_revision_event_to_avro_dict(event: MatchupRevisionEvent) -> dict[str, Any]:
+    """Map a MatchupRevisionEvent Pydantic model to a dict matching matchup_revision_event.avsc."""
+    return {
+        "event_time": _datetime_to_millis(event.event_time),
+        "ingest_time": _datetime_to_millis(event.ingest_time),
+        "game_pk": event.game_pk,
+        "at_bat_number": event.at_bat_number,
+        "pitch_number": event.pitch_number,
+        "pitcher_id": event.pitcher_id,
+        "batter_id": event.batter_id,
+        "revision_type": event.revision_type,
+        "previous_signal_value": event.previous_signal_value,
+        "current_signal_value": event.current_signal_value,
+        "previous_confidence_band": event.previous_confidence_band,
+        "current_confidence_band": event.current_confidence_band,
+        "source_event_id": event.source_event_id,
+    }
+
+
 class AvroEventPublisher:
     """Kafka publisher that serializes events as Avro using Schema Registry.
 
@@ -158,6 +179,11 @@ class AvroEventPublisher:
             schema_path=schema_dir / "correction_event.avsc",
             to_dict=lambda obj, ctx: obj,
         )
+        self._matchup_revision_serializer = self._sr.get_serializer(
+            subject="features.matchup.v1.revisions-value",
+            schema_path=schema_dir / "matchup_revision_event.avsc",
+            to_dict=lambda obj, ctx: obj,
+        )
 
         self._delivered = 0
         self._failed = 0
@@ -171,7 +197,7 @@ class AvroEventPublisher:
         self,
         topic: str,
         key: str,
-        event: PitchEvent | GameStateEvent | CorrectionEvent,
+        event: PitchEvent | GameStateEvent | CorrectionEvent | MatchupRevisionEvent,
     ) -> None:
         """Publish an event with Avro serialization. Non-blocking."""
         if isinstance(event, PitchEvent):
@@ -183,6 +209,9 @@ class AvroEventPublisher:
         elif isinstance(event, CorrectionEvent):
             payload_dict = correction_event_to_avro_dict(event)
             serializer = self._correction_serializer
+        elif isinstance(event, MatchupRevisionEvent):
+            payload_dict = matchup_revision_event_to_avro_dict(event)
+            serializer = self._matchup_revision_serializer
         else:
             raise TypeError(f"AvroEventPublisher cannot serialize {type(event).__name__}")
 
