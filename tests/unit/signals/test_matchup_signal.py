@@ -89,6 +89,30 @@ class TestUnknownHandednessMatchup:
         assert signal.signal_value == 0.0
 
 
+class TestSwitchHandednessMatchups:
+    """Switch-hitters and switch-pitchers get specific placeholder values."""
+
+    def test_r_pitcher_vs_switch_batter(self) -> None:
+        signal = generate_matchup_signal(_base_event(handedness_matchup="R_vs_S"))
+        assert signal.signal_value == -0.10
+
+    def test_l_pitcher_vs_switch_batter(self) -> None:
+        signal = generate_matchup_signal(_base_event(handedness_matchup="L_vs_S"))
+        assert signal.signal_value == -0.10
+
+    def test_switch_pitcher_vs_r_batter(self) -> None:
+        signal = generate_matchup_signal(_base_event(handedness_matchup="S_vs_R"))
+        assert signal.signal_value == 0.05
+
+    def test_switch_pitcher_vs_l_batter(self) -> None:
+        signal = generate_matchup_signal(_base_event(handedness_matchup="S_vs_L"))
+        assert signal.signal_value == 0.08
+
+    def test_switch_vs_switch_is_neutral(self) -> None:
+        signal = generate_matchup_signal(_base_event(handedness_matchup="S_vs_S"))
+        assert signal.signal_value == 0.0
+
+
 class TestSuppressedSignalsAreStillEmitted:
     """Phase 3 needs suppressed signals to evaluate counterfactuals."""
 

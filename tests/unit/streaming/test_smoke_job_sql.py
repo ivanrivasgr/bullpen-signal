@@ -84,5 +84,5 @@ def test_bronze_insert_writes_audit_columns() -> None:
     sql = job.build_bronze_pitches_insert_sql()
 
     assert "INSERT INTO bullpen.bronze.pitches" in sql
-    assert "CURRENT_TIMESTAMP AS ingestion_time" in sql
+    assert "CAST(CURRENT_TIMESTAMP AS TIMESTAMP_LTZ(6)) AS ingestion_time" in sql
     assert "source_offset" in sql

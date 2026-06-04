@@ -38,6 +38,7 @@ WITH pitch_events AS (
         inning_topbot,
         pitcher_id,
         batter_id,
+        lineup_state,
         is_late_arrival,
         is_duplicate,
         correction_of,
@@ -86,6 +87,7 @@ SELECT
     pe.inning_topbot,
     pe.pitcher_id,
     pe.batter_id,
+    pe.lineup_state,
     -- Handedness from the player_handedness seed (ADR 0016, milestone day 2).
     ph.pitcher_handedness,
     bh.batter_handedness,

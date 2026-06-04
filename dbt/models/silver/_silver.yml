@@ -132,7 +132,7 @@ models:
         tests:
           - accepted_values:
               arguments:
-                values: ['L', 'R']
+                values: ['L', 'R', 'S']
               config:
                 where: "pitcher_handedness IS NOT NULL"
       - name: batter_handedness
@@ -142,7 +142,7 @@ models:
         tests:
           - accepted_values:
               arguments:
-                values: ['L', 'R']
+                values: ['L', 'R', 'S']
               config:
                 where: "batter_handedness IS NOT NULL"
       - name: handedness_matchup
@@ -153,6 +153,59 @@ models:
         tests:
           - accepted_values:
               arguments:
-                values: ['R_vs_R', 'R_vs_L', 'L_vs_R', 'L_vs_L']
+                values: ['R_vs_R', 'R_vs_L', 'R_vs_S', 'L_vs_R', 'L_vs_L', 'L_vs_S', 'S_vs_R', 'S_vs_L', 'S_vs_S']
               config:
                 where: "handedness_matchup IS NOT NULL"
+
+  - name: silver_matchup_signals
+    description: |
+      Per-pitch matchup signal materialized from silver_matchup_events.
+      Three new columns (signal_value, confidence_band,
+      lineup_state_at_emission) are produced by the pure function in
+      signals/matchup_signal.py. ADR 0016 governs the design. Phase 3
+      reads this table as the canonical record of what the system would
+      have emitted, for reconciliation against actual outcomes.
+    columns:
+      - name: event_time
+        tests:
+          - not_null
+      - name: game_pk
+        tests:
+          - not_null
+      - name: at_bat_number
+        tests:
+          - not_null
+      - name: pitch_number
+        tests:
+          - not_null
+      - name: pitcher_id
+        tests:
+          - not_null
+      - name: batter_id
+        tests:
+          - not_null
+      - name: signal_value
+        description: |
+          Matchup edge in the pitcher's direction. Positive favors pitcher;
+          negative favors batter. Placeholder values per ADR 0016, to be
+          calibrated in Phase 3 from reconciliation outcomes.
+        tests:
+          - not_null
+      - name: confidence_band
+        description: |
+          One of full / reduced / suppressed, mapped from lineup_state per
+          ADR 0016.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['full', 'reduced', 'suppressed']
+      - name: lineup_state_at_emission
+        description: |
+          The lineup_state that drove the confidence_band. Carried
+          explicitly so Phase 3 can filter without re-joining.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['confirmed', 'uncertain', 'projected']

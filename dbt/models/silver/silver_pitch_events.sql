@@ -35,6 +35,7 @@ WITH bronze AS (
         is_late_arrival,
         is_duplicate,
         correction_of,
+        lineup_state,
         ingestion_time,
         kafka_partition,
         source_offset
@@ -77,6 +78,7 @@ SELECT
     is_late_arrival,
     is_duplicate,
     correction_of,
+    lineup_state,
     ingestion_time,
     kafka_partition,
     source_offset

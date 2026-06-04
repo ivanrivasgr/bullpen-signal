@@ -41,6 +41,16 @@ _PLACEHOLDER_SIGNAL_VALUES: dict[str | None, float] = {
     "R_vs_L": -0.10,
     "L_vs_R": -0.10,
     "L_vs_L": 0.08,
+    # Switch-hitters bat from the opposite side of the pitcher, so they
+    # effectively get the favorable opposite-side matchup. Same magnitude
+    # as L_vs_R / R_vs_L placeholders. Calibrated in Phase 3.
+    "R_vs_S": -0.10,
+    "L_vs_S": -0.10,
+    # Switch-pitchers (very rare) face one batter handedness at a time.
+    # We approximate as the favorable matchup for the pitcher.
+    "S_vs_R": 0.05,
+    "S_vs_L": 0.08,
+    "S_vs_S": 0.0,  # extremely rare; both pick optimal -> neutral
     None: 0.0,  # unknown matchup -> neutral signal
 }
 

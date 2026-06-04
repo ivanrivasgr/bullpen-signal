@@ -21,9 +21,9 @@ seeds:
               arguments:
                 values: ['pitcher', 'batter']
       - name: hand
-        description: "L (left) or R (right). Statcast convention."
+        description: "L (left), R (right), or S (switch-hitter, observed on both sides). Statcast convention extended."
         tests:
           - not_null
           - accepted_values:
               arguments:
-                values: ['L', 'R']
+                values: ['L', 'R', 'S']
