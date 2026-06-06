@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: mart_canonical_outcomes
+    description: |
+      One row per (game_pk, at_bat_number) with the realized at-bat
+      outcome. Source: silver_pitch_events, collapsed to the at-bat-ending
+      pitch (where Statcast populates the `events` field). result_type
+      buckets raw Statcast events into a closed enum that downstream
+      reconciliation models can join against.
+    columns:
+      - name: game_pk
+        tests:
+          - not_null
+      - name: at_bat_number
+        tests:
+          - not_null
+      - name: result_type
+        description: |
+          Closed enum bucketing raw Statcast events into outcomes
+          reconciliation cares about. 'other' is intentional — any
+          event Statcast emits outside the named buckets is kept,
+          not dropped.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['strikeout', 'walk', 'single', 'double', 'triple', 'home_run', 'hit_by_pitch', 'ground_out', 'fly_out', 'other']
+
+  - name: mart_should_have_fired_ledger
+    description: |
+      The Phase 3 should-have-fired ledger. One row per matchup signal
+      emitted with confidence_band IN ('reduced', 'suppressed') joined
+      with the realized at-bat outcome from mart_canonical_outcomes.
+      would_have_been_correct is a documented heuristic, not a
+      calibrated metric — see model header.
+    columns:
+      - name: game_pk
+        tests:
+          - not_null
+      - name: at_bat_number
+        tests:
+          - not_null
+      - name: pitch_number
+        tests:
+          - not_null
+      - name: signal_value
+        tests:
+          - not_null
+      - name: confidence_band
+        description: |
+          Filtered to ('reduced', 'suppressed') by design. Pitches with
+          confidence_band='full' do not appear in this ledger.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['reduced', 'suppressed']
+      - name: lineup_state_at_emission
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['confirmed', 'uncertain', 'projected']
