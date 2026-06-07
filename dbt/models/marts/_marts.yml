@@ -62,3 +62,49 @@ models:
           - accepted_values:
               arguments:
                 values: ['confirmed', 'uncertain', 'projected']
+
+  - name: mart_reconciliation_summary
+    description: |
+      Aggregates mart_should_have_fired_ledger by (lineup_state_at_emission,
+      confidence_band, handedness_matchup). Reports per-group counts and
+      a correction_rate using the ADR 0018 heuristic. Empty until
+      BATTER_UNCERTAIN replays populate the ledger with reduced or
+      suppressed signals. The shape is ready for Phase 3 calibration.
+    columns:
+      - name: lineup_state_at_emission
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['confirmed', 'uncertain', 'projected']
+      - name: confidence_band
+        description: |
+          Inherited from the ledger, which is already filtered to
+          ('reduced', 'suppressed') — see mart_should_have_fired_ledger.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['reduced', 'suppressed']
+      - name: handedness_matchup
+        description: |
+          Brought in from silver_matchup_events by joining on natural
+          key. Includes the switch-hitter values (R_vs_S, L_vs_S,
+          S_vs_R, S_vs_L, S_vs_S) introduced during Milestone 2.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['R_vs_R', 'R_vs_L', 'R_vs_S', 'L_vs_R', 'L_vs_L', 'L_vs_S', 'S_vs_R', 'S_vs_L', 'S_vs_S']
+      - name: total_pitches
+        tests:
+          - not_null
+      - name: evaluable_pitches
+        tests:
+          - not_null
+      - name: correction_rate
+        description: |
+          Heuristic correction rate per ADR 0018. NULL when
+          evaluable_pitches = 0 in the group. Not a calibrated metric;
+          Phase 3 reconciliation replaces this with calibrated
+          correction rates once enough outcome data accumulates.
