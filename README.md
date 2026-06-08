@@ -34,6 +34,7 @@ The replay engine publishes Statcast pitch-level data and MLB StatsAPI game stat
 - **Batch** (today): dbt incremental and Python models on DuckDB reconstruct canonical truth over Iceberg snapshots, applying late arrivals, duplicates, and official corrections.
 
 Both paths land in a medallion lakehouse on Iceberg. A reconciliation layer compares every streaming emission against canonical truth and records the delta. The dashboard surfaces three views: live dugout, canonical truth, and reconciliation.
+```
 Statcast parquets   StatsAPI lineups
 │                  │
 └────────┬─────────┘
@@ -57,6 +58,7 @@ marts
 reconciliation summary)
 │
 Dashboard
+```
 
 See `docs/architecture/` for component diagrams and `docs/adr/` for the decisions behind each choice.
 
@@ -151,6 +153,7 @@ pytest tests/unit/ --no-cov -q
 ```
 
 ## Repository structure
+```
 bullpen-signal/
 ├── apps/
 │   └── dashboard/             Streamlit dashboard (live data in Phase 4)
@@ -178,8 +181,9 @@ bullpen-signal/
 │   ├── flink_jobs/            PyFlink job sources (smoke job today; real jobs Phase 3)
 │   └── schemas/               Avro schemas for each Kafka topic
 └── tests/
-├── unit/                  Unit tests (169 passing)
-└── integration/           Integration scaffold (Phase 3+)
+    ├── unit/              Unit tests (169 passing)
+    └── integration/       Integration scaffold (Phase 3+)
+```
 
 ## What is honest about this repo
 
