@@ -99,6 +99,19 @@ def _configure_logging(level: str) -> None:
         f"Default cache path: {DEFAULT_CACHE_PATH}."
     ),
 )
+@click.option(
+    "--uncertainty-rate",
+    type=click.FloatRange(0.0, 1.0),
+    default=None,
+    help=(
+        "Probability per game that the BATTER_UNCERTAIN window activates "
+        "(see ADR 0014). Default matches the ADR's 'occasionally late' "
+        "framing. Pass 1.0 to force every game into the window — useful "
+        "for reconciliation testing where the should-have-fired ledger "
+        "needs non-empty input. Pass 0.0 to disable. Requires the lineup "
+        "cache to be present; otherwise has no effect."
+    ),
+)
 def main(
     game_date: str,
     game_pk: int | None,
@@ -107,6 +120,7 @@ def main(
     seed: int,
     dry_run: bool,
     lineup_cache_path: str | None,
+    uncertainty_rate: float | None,
 ) -> None:
     _configure_logging(config.log_level)
 
@@ -129,7 +143,13 @@ def main(
     # pre-Phase-2 behavior. This keeps CI and replays without precomputed
     # lineups working unchanged.
     lineup_cache = _maybe_load_lineup_cache(lineup_cache_path)
-    uncertainty_config = UncertaintyConfig(base_seed=seed)
+    # If --uncertainty-rate is not passed, fall back to the dataclass default
+    # (0.15 per ADR 0014). Click default of None lets us distinguish "user
+    # passed 0.0 to disable" from "user did not pass anything".
+    if uncertainty_rate is None:
+        uncertainty_config = UncertaintyConfig(base_seed=seed)
+    else:
+        uncertainty_config = UncertaintyConfig(base_seed=seed, late_game_rate=uncertainty_rate)
 
     df = load_statcast_date(target_date)
     if df.empty:
