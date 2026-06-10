@@ -163,6 +163,83 @@ class TestApplyUncertaintyWindow:
         assert pitch.lineup_state == original_state
         assert pitch.batter_id == original_batter
 
+    def test_successful_projection_preserves_batter_and_sets_projected(self, tmp_path) -> None:
+        """ADR 0020 contract: a successful projection populates projected_batter_id
+        and leaves batter_id as the observed truth.
+
+        _infer_batting_team_id is stubbed to None today (team_id threading is a
+        follow-up commit), so we patch it to return a real team so the projection
+        path executes. This locks in the contract the rest of the system depends
+        on, ahead of team_id threading.
+        """
+        import json
+        from unittest.mock import patch
+
+        from ingestion.replay_engine.lineup_projection import LineupCache
+
+        cache_path = tmp_path / "lineups.json"
+        with cache_path.open("w") as f:
+            json.dump(
+                {
+                    "lineups": [
+                        {
+                            "game_pk": 745123,
+                            "game_date": "2024-06-14",
+                            "team_id": 111,
+                            "side": "home",
+                            "batting_order": [101, 102, 103, 104, 105, 106, 107, 108, 109],
+                        }
+                    ]
+                },
+                f,
+            )
+        cache = LineupCache(cache_path)
+        first_pitch = datetime(2024, 6, 15, 19, 5, 0, tzinfo=UTC)
+        pitch = _make_pitch(
+            event_time=first_pitch + timedelta(seconds=60),
+            batter_id=999999,  # the observed truth
+        )
+
+        # Patch team inference to return the cached team so projection runs.
+        with patch(
+            "ingestion.replay_engine.uncertainty_window._infer_batting_team_id",
+            return_value=111,
+        ):
+            result = apply_uncertainty_window(
+                pitch=pitch,
+                first_pitch_time=first_pitch,
+                uncertainty_seconds=300,
+                cache=cache,
+                lineup_position=3,
+            )
+
+        assert result.lineup_state == "uncertain"
+        # Ground truth preserved.
+        assert result.batter_id == 999999
+        # Projection populated with lineup position 3 (0-indexed 2 -> 103).
+        assert result.projected_batter_id == 103
+        # And the two are different — which is the whole point.
+        assert result.batter_id != result.projected_batter_id
+
+    def test_failed_projection_leaves_projected_none(self) -> None:
+        """When projection cannot run (no team_id today), projected_batter_id is
+        None and batter_id is untouched. A failed projection is not a projection
+        equal to the real batter."""
+        first_pitch = datetime(2024, 6, 15, 19, 5, 0, tzinfo=UTC)
+        pitch = _make_pitch(
+            event_time=first_pitch + timedelta(seconds=30),
+            batter_id=12345,
+        )
+        result = apply_uncertainty_window(
+            pitch=pitch,
+            first_pitch_time=first_pitch,
+            uncertainty_seconds=300,
+            cache=None,
+        )
+        assert result.lineup_state == "uncertain"
+        assert result.batter_id == 12345
+        assert result.projected_batter_id is None
+
 
 class TestIntegrationWithLineupCache:
     """Light integration with LineupCache. Heavy cache logic is covered in test_lineup_projection.py."""

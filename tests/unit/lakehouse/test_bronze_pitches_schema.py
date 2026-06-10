@@ -21,7 +21,7 @@ def test_bronze_pitches_identifier_and_location_are_stable() -> None:
 def test_bronze_pitches_schema_uses_event_time_and_audit_metadata() -> None:
     fields = _fields_by_name()
 
-    assert len(fields) == 31
+    assert len(fields) == 32
     assert "ingest_time" not in fields
     assert fields["event_time"].field_id == 1
     assert fields["event_time"].field_type == TimestamptzType()
@@ -34,6 +34,13 @@ def test_bronze_pitches_schema_uses_event_time_and_audit_metadata() -> None:
     assert fields["lineup_state"].field_id == 32
     assert fields["lineup_state"].field_type == StringType()
     assert fields["lineup_state"].required is False
+
+    # projected_batter_id (ADR 0020): the inference the system would have
+    # made during the uncertainty window. Nullable because confirmed pitches
+    # have no projection. batter_id stays the observed truth.
+    assert fields["projected_batter_id"].field_id == 33
+    assert fields["projected_batter_id"].field_type == LongType()
+    assert fields["projected_batter_id"].required is False
 
 
 def test_bronze_pitches_leaves_retired_field_id_two_unused() -> None:

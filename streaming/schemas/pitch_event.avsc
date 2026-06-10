@@ -44,7 +44,14 @@
     },
     {
       "name": "batter_id",
-      "type": "long"
+      "type": "long",
+      "doc": "The observed (ground-truth) batter. Always populated, even during the uncertainty window."
+    },
+    {
+      "name": "projected_batter_id",
+      "type": ["null", "long"],
+      "default": null,
+      "doc": "The projected batter during the BATTER_UNCERTAIN window (ADR 0015). Null when confirmed or when projection failed."
     },
     {
       "name": "pitch_type",

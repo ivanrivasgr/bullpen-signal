@@ -135,7 +135,10 @@ def apply_uncertainty_window(
         return pitch.model_copy(update={"lineup_state": "confirmed"})
 
     # Inside the uncertainty window: tag as uncertain and try to project.
-    projected_batter_id = pitch.batter_id  # safe fallback
+    # If projection fails (cache miss across all ADR 0015 layers), leave
+    # projected_batter_id as None rather than copying the real batter — a
+    # failed projection is not the same as "projected the right batter".
+    projected_batter_id = None
     if cache is not None:
         position = (
             lineup_position
@@ -153,10 +156,14 @@ def apply_uncertainty_window(
             if projected is not None:
                 projected_batter_id = projected
 
+    # Preserve the observed batter (ground truth) in batter_id; record the
+    # projection in projected_batter_id. ADR 0020 reverses the earlier design
+    # that overwrote batter_id with the projection — destroying ground truth
+    # made reconciliation impossible to compute downstream.
     return pitch.model_copy(
         update={
             "lineup_state": "uncertain",
-            "batter_id": projected_batter_id,
+            "projected_batter_id": projected_batter_id,
         }
     )
 

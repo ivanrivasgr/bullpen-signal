@@ -60,6 +60,7 @@ def pitch_event_to_avro_dict(event: PitchEvent) -> dict[str, Any]:
         "inning_topbot": event.inning_topbot,
         "pitcher_id": event.pitcher_id,
         "batter_id": event.batter_id,
+        "projected_batter_id": event.projected_batter_id,
         "pitch_type": event.pitch_type,
         "release_speed": event.release_speed,
         "release_spin_rate": event.release_spin_rate,

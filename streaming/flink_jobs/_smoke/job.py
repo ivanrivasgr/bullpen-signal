@@ -57,6 +57,7 @@ def build_pitches_source_ddl(
             inning_topbot STRING NOT NULL,
             pitcher_id BIGINT NOT NULL,
             batter_id BIGINT NOT NULL,
+            projected_batter_id BIGINT,
             pitch_type STRING,
             release_speed DOUBLE,
             release_spin_rate DOUBLE,
@@ -184,7 +185,8 @@ def build_bronze_pitches_insert_sql() -> str:
             CAST(CURRENT_TIMESTAMP AS TIMESTAMP_LTZ(6)) AS ingestion_time,
             source_offset AS source_offset,
             kafka_partition AS kafka_partition,
-            lineup_state
+            lineup_state,
+            projected_batter_id
         FROM pitches_source
     """
 

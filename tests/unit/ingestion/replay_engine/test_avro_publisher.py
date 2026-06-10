@@ -81,6 +81,7 @@ class TestPitchEventConversion:
             "inning_topbot",
             "pitcher_id",
             "batter_id",
+            "projected_batter_id",
             "pitch_type",
             "release_speed",
             "release_spin_rate",

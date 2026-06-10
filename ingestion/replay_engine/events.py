@@ -28,7 +28,18 @@ class PitchEvent(BaseModel):
     inning: int
     inning_topbot: Literal["Top", "Bot"]
     pitcher_id: int
+    # batter_id is ALWAYS the observed (ground-truth) batter from Statcast.
+    # During the BATTER_UNCERTAIN window (ADR 0014) the system does not yet
+    # know this value operationally, but the replay does (it reads historical
+    # data), so we preserve it here rather than destroy it. The inference the
+    # system would have made at emission time lives in projected_batter_id.
     batter_id: int
+    # The projected batter the system would have used during the uncertainty
+    # window (ADR 0015). None when lineup_state == "confirmed" (no projection
+    # needed) or when projection failed. When lineup_state == "uncertain",
+    # this holds the projection and batter_id holds the truth, so downstream
+    # reconciliation can compare the two without re-deriving either.
+    projected_batter_id: int | None = None
     pitch_type: str | None = None
     release_speed: float | None = None
     release_spin_rate: float | None = None
