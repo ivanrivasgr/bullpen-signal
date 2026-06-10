@@ -162,6 +162,18 @@
       "type": "int"
     },
     {
+      "name": "home_team_id",
+      "type": ["null", "long"],
+      "default": null,
+      "doc": "Numeric team_id of the home club, mapped from the Statcast abbreviation."
+    },
+    {
+      "name": "away_team_id",
+      "type": ["null", "long"],
+      "default": null,
+      "doc": "Numeric team_id of the away club, mapped from the Statcast abbreviation."
+    },
+    {
       "name": "is_late_arrival",
       "type": "boolean",
       "default": false

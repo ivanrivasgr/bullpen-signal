@@ -58,6 +58,8 @@ def build_pitches_source_ddl(
             pitcher_id BIGINT NOT NULL,
             batter_id BIGINT NOT NULL,
             projected_batter_id BIGINT,
+            home_team_id BIGINT,
+            away_team_id BIGINT,
             pitch_type STRING,
             release_speed DOUBLE,
             release_spin_rate DOUBLE,
@@ -186,7 +188,9 @@ def build_bronze_pitches_insert_sql() -> str:
             source_offset AS source_offset,
             kafka_partition AS kafka_partition,
             lineup_state,
-            projected_batter_id
+            projected_batter_id,
+            home_team_id,
+            away_team_id
         FROM pitches_source
     """
 

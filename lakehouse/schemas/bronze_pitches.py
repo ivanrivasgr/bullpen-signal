@@ -53,6 +53,8 @@ BRONZE_PITCHES_SCHEMA = Schema(
     NestedField(field_id=31, name="kafka_partition", field_type=IntegerType(), required=True),
     NestedField(field_id=32, name="lineup_state", field_type=StringType(), required=False),
     NestedField(field_id=33, name="projected_batter_id", field_type=LongType(), required=False),
+    NestedField(field_id=34, name="home_team_id", field_type=LongType(), required=False),
+    NestedField(field_id=35, name="away_team_id", field_type=LongType(), required=False),
 )
 
 BRONZE_PITCHES_PARTITION_SPEC = PartitionSpec(

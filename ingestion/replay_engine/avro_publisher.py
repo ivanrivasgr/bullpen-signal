@@ -77,6 +77,8 @@ def pitch_event_to_avro_dict(event: PitchEvent) -> dict[str, Any]:
         "events": event.events,
         "home_score": event.home_score,
         "away_score": event.away_score,
+        "home_team_id": event.home_team_id,
+        "away_team_id": event.away_team_id,
         "is_late_arrival": event.is_late_arrival,
         "is_duplicate": event.is_duplicate,
         "correction_of": event.correction_of,

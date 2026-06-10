@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 import pandas as pd
 
 from .events import PitchEvent
+from .team_lookup import abbreviation_to_team_id
 
 
 def row_to_pitch_event(row: pd.Series, ingest_time: datetime) -> PitchEvent:
@@ -43,6 +44,8 @@ def row_to_pitch_event(row: pd.Series, ingest_time: datetime) -> PitchEvent:
         events=_str_or_none(row.get("events")),
         home_score=int(row.get("home_score", 0)),
         away_score=int(row.get("away_score", 0)),
+        home_team_id=_team_id_or_none(row.get("home_team")),
+        away_team_id=_team_id_or_none(row.get("away_team")),
     )
 
 
@@ -67,6 +70,23 @@ def _int_or_none(val: object) -> int | None:
     if f is None:
         return None
     return int(f)
+
+
+def _team_id_or_none(abbreviation: object) -> int | None:
+    """Map a Statcast team abbreviation to its numeric team_id.
+
+    Returns None if the abbreviation is missing or not in the reference
+    map. A None team_id means the uncertainty window cannot infer the
+    batting team for this pitch and will skip projection, leaving
+    projected_batter_id None — the same graceful degradation as a cache
+    miss.
+    """
+    if abbreviation is None:
+        return None
+    s = str(abbreviation).strip()
+    if not s or s.lower() == "nan":
+        return None
+    return abbreviation_to_team_id(s)
 
 
 def _str_or_none(val: object) -> str | None:

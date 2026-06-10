@@ -56,6 +56,13 @@ class PitchEvent(BaseModel):
     events: str | None = None
     home_score: int
     away_score: int
+    # Numeric team_ids for the two clubs, threaded so the uncertainty window
+    # can infer which team is batting (ADR 0015 projection needs the batting
+    # team). Derived from the Statcast home_team/away_team abbreviations via
+    # the team_abbreviations reference map. Optional so events built without
+    # team context (older tests, hand-built fixtures) still validate.
+    home_team_id: int | None = None
+    away_team_id: int | None = None
     # Epistemic state of batter identity at emission time. See ADR 0013.
     # One of: "confirmed", "uncertain", "projected". Default keeps historical
     # replay traffic backward-compatible — pre-Phase-2 events implicitly mean confirmed.

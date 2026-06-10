@@ -244,10 +244,16 @@ class TestApplyUncertaintyWindow:
 class TestIntegrationWithLineupCache:
     """Light integration with LineupCache. Heavy cache logic is covered in test_lineup_projection.py."""
 
-    def test_cache_present_but_no_team_id_threading_leaves_batter_unchanged(
-        self, tmp_path: Path
-    ) -> None:
-        """Current implementation does not yet thread batting team. Document via test."""
+    def test_uncertain_pitch_without_team_id_skips_projection(self, tmp_path: Path) -> None:
+        """When team_id is absent from the event, projection is skipped gracefully.
+
+        _make_pitch builds an event without home_team_id/away_team_id (both
+        default to None), so _infer_batting_team_id returns None and the
+        projection cannot run. The pitch is still correctly tagged uncertain;
+        projected_batter_id stays None and the observed batter is untouched.
+        This is the same graceful degradation as a cache miss — a missing
+        team_id never causes a mislabeled state or a destroyed batter.
+        """
         cache_path = tmp_path / "lineups.json"
         with cache_path.open("w") as f:
             json.dump(
@@ -288,5 +294,7 @@ class TestIntegrationWithLineupCache:
             lineup_position=3,
         )
         assert result.lineup_state == "uncertain"
-        # team_id inference returns None today, so the batter stays as-is.
+        # No team_id on the event, so projection is skipped: batter preserved,
+        # projection left None.
         assert result.batter_id == 999999
+        assert result.projected_batter_id is None

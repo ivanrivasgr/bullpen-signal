@@ -46,6 +46,8 @@ data/
 *.csv
 # Exception: dbt seeds are versioned source data, not output
 !dbt/seeds/*.csv
+# Exception: replay-engine reference maps are versioned source data
+!ingestion/replay_engine/reference/*.csv
 *.parquet
 *.db
 *.duckdb

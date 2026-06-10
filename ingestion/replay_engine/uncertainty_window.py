@@ -184,15 +184,19 @@ def _approximate_lineup_position(at_bat_number: int) -> int:
 
 
 def _infer_batting_team_id(pitch: PitchEvent) -> int | None:
-    """The batting team's identity is not on the pitch event today.
+    """Return the team_id of the club currently batting.
 
-    Statcast pitch rows do not carry batting_team_id. The replay engine
-    doesn't currently thread it through. Returning None here causes the
-    projection to be skipped and the batter to remain unchanged inside
-    the uncertainty window — the pitch is still correctly tagged
-    `uncertain`, only the projected-batter substitution is dropped.
+    In the top of an inning the away team bats; in the bottom the home
+    team bats. The team_ids are threaded onto the pitch event from the
+    Statcast home_team/away_team abbreviations (see mapping.py and
+    team_lookup.py).
 
-    A follow-up commit can thread batting_team_id through the pitch
-    event (via inning_topbot + game metadata) and remove this stub.
+    Returns None if the relevant team_id was not threaded (e.g. an event
+    built without team context, or an abbreviation missing from the
+    reference map). A None return skips projection and leaves
+    projected_batter_id None — the same graceful degradation as a cache
+    miss, so no pitch is ever mislabeled on account of a missing team_id.
     """
-    return None
+    if pitch.inning_topbot == "Top":
+        return pitch.away_team_id
+    return pitch.home_team_id

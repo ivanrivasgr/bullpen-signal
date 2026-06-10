@@ -98,6 +98,8 @@ class TestPitchEventConversion:
             "events",
             "home_score",
             "away_score",
+            "home_team_id",
+            "away_team_id",
             "is_late_arrival",
             "is_duplicate",
             "correction_of",
