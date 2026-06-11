@@ -1,7 +1,15 @@
 # ADR 0019 - Emitting Revisions When the Uncertainty Window Resolves
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR 0020
 - **Date:** 2026-06-09
+- **Note:** The intent of this ADR — closing the revision loop so the
+  reconciliation layer records what the system would have corrected once
+  the lineup confirmed — stands. Its mechanism does not. This ADR proposed
+  the replay emit the resolution as a second signal; implementation showed
+  signals are generated in dbt, not the replay, and that the first approach
+  destroyed the observed batter. ADR 0020 records the corrected mechanism
+  (preserve the observed batter, emit twice in dbt). Read 0020 alongside
+  this document.
 
 ## Context
 
