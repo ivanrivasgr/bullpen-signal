@@ -38,6 +38,7 @@ WITH pitch_events AS (
         inning_topbot,
         pitcher_id,
         batter_id,
+        projected_batter_id,
         lineup_state,
         is_late_arrival,
         is_duplicate,
@@ -75,6 +76,14 @@ batter_hands AS (
         hand AS batter_handedness
     FROM {{ ref("player_handedness") }}
     WHERE role = 'batter'
+),
+
+projected_batter_hands AS (
+    SELECT
+        player_id AS projected_batter_id,
+        hand AS projected_batter_handedness
+    FROM {{ ref("player_handedness") }}
+    WHERE role = 'batter'
 )
 
 SELECT
@@ -98,6 +107,17 @@ SELECT
         WHEN ph.pitcher_handedness IS NULL OR bh.batter_handedness IS NULL THEN NULL
         ELSE ph.pitcher_handedness || '_vs_' || bh.batter_handedness
     END AS handedness_matchup,
+    -- Projected batter + its handedness matchup. Populated only when the
+    -- uncertainty window produced a projection (projected_batter_id not null).
+    -- This is what the system WOULD have computed during the window, before
+    -- the real lineup confirmed. The reduced-confidence signal is keyed on
+    -- this, not on the real matchup (ADR 0020).
+    pe.projected_batter_id,
+    pbh.projected_batter_handedness,
+    CASE
+        WHEN ph.pitcher_handedness IS NULL OR pbh.projected_batter_handedness IS NULL THEN NULL
+        ELSE ph.pitcher_handedness || '_vs_' || pbh.projected_batter_handedness
+    END AS projected_handedness_matchup,
     -- Fatigue context joined from the pitcher-game-level signal.
     f.fatigue_bucket AS pitcher_fatigue_bucket,
     -- Audit columns inherited so downstream tests can use them directly.
@@ -114,4 +134,6 @@ LEFT JOIN pitcher_hands AS ph
     ON pe.pitcher_id = ph.pitcher_id
 LEFT JOIN batter_hands AS bh
     ON pe.batter_id = bh.batter_id
+LEFT JOIN projected_batter_hands AS pbh
+    ON pe.projected_batter_id = pbh.projected_batter_id
 WHERE NOT pe.is_duplicate
