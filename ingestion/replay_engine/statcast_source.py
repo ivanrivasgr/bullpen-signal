@@ -1,7 +1,11 @@
 """Load pitch-level data from Statcast for a given date or game.
 
-Uses pybaseball, which caches to `pybaseball_cache/` in the repo root. The
-cache is gitignored.
+Uses pybaseball. Caching is enabled at import time via cache.enable(),
+which writes to pybaseball's default location (~/.pybaseball/cache).
+This makes repeated day-pulls — multi-day replays, re-running the
+validation harness — hit the local cache instead of re-querying the
+Statcast endpoint. First pull of a day is ~7-9s; cached pulls are
+~0.1s. The cache directory is outside the repo and not tracked.
 """
 
 from __future__ import annotations
@@ -10,6 +14,15 @@ from datetime import UTC, date, datetime
 
 import pandas as pd
 import structlog
+from pybaseball import cache
+
+# Enable pybaseball's on-disk cache once, at import time. Without this,
+# every statcast(day) call re-queries the endpoint (~7-9s each), which
+# makes multi-day replays and repeated validation runs slow and brittle
+# against the upstream API. Enabled, a day pulled once is served from
+# ~/.pybaseball/cache on every subsequent pull (~0.1s, measured ~79x
+# faster). Idempotent and safe to call on every import.
+cache.enable()
 
 log = structlog.get_logger(__name__)
 
