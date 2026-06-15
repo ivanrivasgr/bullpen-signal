@@ -31,35 +31,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-# Placeholder signal values per handedness matchup. Magnitudes are not
-# calibrated — they encode the conventional baseball intuition that
-# same-side matchups slightly favor the pitcher and opposite-side
-# matchups favor the batter. Phase 3 will replace these with calibrated
-# values from the reconciliation layer.
-_PLACEHOLDER_SIGNAL_VALUES: dict[str | None, float] = {
-    "R_vs_R": 0.05,
-    "R_vs_L": -0.10,
-    "L_vs_R": -0.10,
-    "L_vs_L": 0.08,
-    # Switch-hitters bat from the opposite side of the pitcher, so they
-    # effectively get the favorable opposite-side matchup. Same magnitude
-    # as L_vs_R / R_vs_L placeholders. Calibrated in Phase 3.
-    "R_vs_S": -0.10,
-    "L_vs_S": -0.10,
-    # Switch-pitchers (very rare) face one batter handedness at a time.
-    # We approximate as the favorable matchup for the pitcher.
-    "S_vs_R": 0.05,
-    "S_vs_L": 0.08,
-    "S_vs_S": 0.0,  # extremely rare; both pick optimal -> neutral
-    None: 0.0,  # unknown matchup -> neutral signal
-}
-
-# Mapping from lineup_state to confidence_band per ADR 0016.
-_CONFIDENCE_BAND_BY_LINEUP_STATE: dict[str, Literal["full", "reduced", "suppressed"]] = {
-    "confirmed": "full",
-    "uncertain": "reduced",
-    "projected": "suppressed",
-}
+from signals.matchup_core import compute_signal_fields
 
 
 class MatchupSignal(BaseModel):
@@ -110,7 +82,9 @@ def generate_matchup_signal(matchup_event: dict) -> MatchupSignal:
 
     The input is a dict matching the silver_matchup_events schema. The
     function is pure — no I/O, no logging. It returns a Pydantic model
-    that the replay engine or Flink job will emit downstream.
+    that the replay engine or batch dbt model emits downstream. The
+    streaming path does not use this; it calls compute_signal_fields
+    directly to avoid a Pydantic dependency in the Flink runtime.
 
     Required keys in matchup_event:
         event_time, game_pk, at_bat_number, pitch_number,
@@ -124,16 +98,11 @@ def generate_matchup_signal(matchup_event: dict) -> MatchupSignal:
         KeyError: if a required field is missing from matchup_event.
         ValueError: if lineup_state is not one of the documented values.
     """
-    lineup_state = matchup_event["lineup_state"]
-    if lineup_state not in _CONFIDENCE_BAND_BY_LINEUP_STATE:
-        raise ValueError(
-            f"unknown lineup_state {lineup_state!r}; "
-            f"expected one of {sorted(_CONFIDENCE_BAND_BY_LINEUP_STATE)}"
-        )
-
     handedness_matchup = matchup_event.get("handedness_matchup")
-    signal_value = _PLACEHOLDER_SIGNAL_VALUES.get(handedness_matchup, 0.0)
-    confidence_band = _CONFIDENCE_BAND_BY_LINEUP_STATE[lineup_state]
+    signal_value, confidence_band, lineup_state = compute_signal_fields(
+        handedness_matchup=handedness_matchup,
+        lineup_state=matchup_event["lineup_state"],
+    )
 
     return MatchupSignal(
         event_time=matchup_event["event_time"],
