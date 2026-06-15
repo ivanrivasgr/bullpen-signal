@@ -70,6 +70,7 @@ ignore = ["E501"]
 quote-style = "double"
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers --cov=ingestion --cov=streaming --cov-report=term-missing -m 'not integration and not slow'"
 markers = [

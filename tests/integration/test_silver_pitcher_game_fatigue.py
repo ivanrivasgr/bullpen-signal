@@ -23,7 +23,6 @@ import os
 import subprocess
 import time
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
 import duckdb
 import pyarrow as pa
@@ -31,6 +30,7 @@ import pytest
 
 from infra.scripts.materialize_dbt_sources import default_dbt_duckdb_path
 from ingestion.replay_engine.events import PitchEvent
+from tests._paths import REPO_ROOT
 from tests.integration.test_bronze_pitches_iceberg import _copy_pitch
 from tests.integration.test_smoke_job import _build_synthetic_pitches
 
@@ -41,9 +41,9 @@ SYNTHETIC_SOURCE_OFFSET_BASE = 2_000_000
 
 
 def _ensure_dbt_profile() -> None:
-    profile = Path("dbt/profiles.yml")
+    profile = REPO_ROOT / "dbt/profiles.yml"
     if not profile.exists():
-        profile.write_text(Path("dbt/profiles.yml.example").read_text())
+        profile.write_text((REPO_ROOT / "dbt/profiles.yml.example").read_text())
 
 
 def _write_pitches_to_duckdb_bronze(pitches: list[PitchEvent]) -> None:

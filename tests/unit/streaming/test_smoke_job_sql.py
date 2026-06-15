@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
-from pathlib import Path
 
-SMOKE_JOB_PATH = Path("streaming/flink_jobs/_smoke/job.py")
+from tests._paths import REPO_ROOT
+
+SMOKE_JOB_PATH = REPO_ROOT / "streaming/flink_jobs/_smoke/job.py"
 
 
 def _load_smoke_job_module():

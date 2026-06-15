@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
+from tests._paths import REPO_ROOT
 
-MODEL_SQL = Path("dbt/models/silver/silver_pitcher_game_fatigue.sql").read_text()
-SILVER_YML = Path("dbt/models/silver/_silver.yml").read_text()
-UNIQUE_TEST_SQL = Path("dbt/tests/unique_silver_pitcher_game_fatigue_natural_key.sql").read_text()
+MODEL_SQL = (REPO_ROOT / "dbt/models/silver/silver_pitcher_game_fatigue.sql").read_text()
+SILVER_YML = (REPO_ROOT / "dbt/models/silver/_silver.yml").read_text()
+UNIQUE_TEST_SQL = (
+    REPO_ROOT / "dbt/tests/unique_silver_pitcher_game_fatigue_natural_key.sql"
+).read_text()
 
 
 def _compact(value: str) -> str:

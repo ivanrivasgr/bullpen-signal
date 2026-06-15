@@ -22,13 +22,13 @@ import re
 import subprocess
 import time
 from datetime import UTC, datetime
-from pathlib import Path
 
 import pytest
 
 from infra.scripts.create_bronze_tables import ensure_bronze_pitches_table
 from ingestion.replay_engine.avro_publisher import AvroEventPublisher
 from ingestion.replay_engine.events import PitchEvent
+from tests._paths import REPO_ROOT
 from tests.integration.conftest import BOOTSTRAP_SERVERS, SCHEMA_REGISTRY_URL
 
 pytestmark = [pytest.mark.integration, pytest.mark.slow]
@@ -39,7 +39,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.slow]
 
 JOBMANAGER_CONTAINER = "bullpen-flink-jm"
 TASKMANAGER_CONTAINER = "bullpen-flink-tm"
-SMOKE_JOB_HOST_PATH = Path("streaming/flink_jobs/_smoke/job.py")
+SMOKE_JOB_HOST_PATH = REPO_ROOT / "streaming/flink_jobs/_smoke/job.py"
 SMOKE_JOB_CONTAINER_PATH = "/tmp/smoke_job_test.py"
 
 JOB_RUNNING_TIMEOUT = 30.0  # seconds to wait for job state RUNNING
