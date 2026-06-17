@@ -78,3 +78,25 @@ def compute_signal_fields(
     signal_value = _PLACEHOLDER_SIGNAL_VALUES.get(handedness_matchup, 0.0)
     confidence_band = _CONFIDENCE_BAND_BY_LINEUP_STATE[lineup_state]
     return (signal_value, confidence_band, lineup_state)
+
+
+def derive_handedness_matchup(
+    pitcher_handedness: str | None,
+    batter_handedness: str | None,
+) -> str | None:
+    """Derive the handedness matchup string, matching the dbt model exactly.
+
+    Mirrors the CASE in silver_matchup_events.sql:
+        NULL if either side is NULL, else pitcher_hand || '_vs_' || batter_hand.
+
+    So ('R', 'L') -> 'R_vs_L', ('R', 'S') -> 'R_vs_S', and a missing side
+    (player absent from the handedness seed) -> None, since a partial
+    matchup is not a usable signal. Both the batch path (dbt) and the
+    streaming path (the Flink handedness UDF) derive the matchup the same
+    way by calling this, so the two cannot drift — the same anti-drift
+    guarantee compute_signal_fields gives for the signal itself
+    (ADR 0001, ADR 0021).
+    """
+    if pitcher_handedness is None or batter_handedness is None:
+        return None
+    return f"{pitcher_handedness}_vs_{batter_handedness}"
