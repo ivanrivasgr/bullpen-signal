@@ -59,51 +59,40 @@ def model(dbt, session):
 
     import pandas as pd
 
-    from signals.matchup_signal import generate_matchup_signal
+    from signals.matchup_core import compute_signal_fields, plan_signal_emissions
 
     matchup_events = dbt.ref("silver_matchup_events").df()
 
     output_rows = []
     for _, row in matchup_events.iterrows():
         row_dict = row.to_dict()
-        is_uncertain = row_dict.get("lineup_state") == "uncertain"
         has_projection = row_dict.get("projected_batter_id") is not None
 
-        if is_uncertain and has_projection:
-            # Emission 1: reduced signal from the PROJECTED handedness.
-            # Override the matchup the signal generator sees so it computes
-            # against what the system knew during the window, and force the
-            # lineup_state to uncertain so the confidence band is reduced.
-            reduced_input = dict(row_dict)
-            reduced_input["handedness_matchup"] = row_dict.get("projected_handedness_matchup")
-            reduced_input["lineup_state"] = "uncertain"
-            reduced_signal = generate_matchup_signal(reduced_input)
-            reduced_row = dict(row_dict)
-            reduced_row["signal_value"] = reduced_signal.signal_value
-            reduced_row["confidence_band"] = reduced_signal.confidence_band
-            reduced_row["lineup_state_at_emission"] = "uncertain"
-            output_rows.append(reduced_row)
+        # plan_signal_emissions decides the expansion (one or two emissions,
+        # and which handedness matchup + lineup_state each uses), shared with
+        # the streaming path so the two cannot drift. compute_signal_fields
+        # then computes each emission's signal. Both live in matchup_core.
+        emissions = plan_signal_emissions(
+            lineup_state=row_dict.get("lineup_state"),
+            handedness_matchup=row_dict.get("handedness_matchup"),
+            projected_handedness_matchup=row_dict.get("projected_handedness_matchup"),
+            has_projection=has_projection,
+        )
 
-            # Emission 2: full signal from the REAL handedness (resolution).
-            full_input = dict(row_dict)
-            full_input["lineup_state"] = "confirmed"
-            full_signal = generate_matchup_signal(full_input)
-            full_row = dict(row_dict)
-            full_row["signal_value"] = full_signal.signal_value
-            full_row["confidence_band"] = full_signal.confidence_band
-            full_row["lineup_state_at_emission"] = "confirmed"
-            output_rows.append(full_row)
-        else:
-            # Single emission: confirmed pitch, or uncertain-without-projection.
-            # The signal generator uses the row's own lineup_state to pick the
-            # confidence band, so uncertain-without-projection still records a
-            # reduced band, honestly reflecting that the system was uncertain
-            # but had no projection to act on.
-            signal = generate_matchup_signal(row_dict)
-            single_row = dict(row_dict)
-            single_row["signal_value"] = signal.signal_value
-            single_row["confidence_band"] = signal.confidence_band
-            single_row["lineup_state_at_emission"] = signal.lineup_state_at_emission
-            output_rows.append(single_row)
+        for matchup, emission_state in emissions:
+            signal_value, confidence_band, lineup_state_at_emission = compute_signal_fields(
+                matchup, emission_state
+            )
+            # The signal is computed from the per-emission matchup (projected
+            # for the reduced emission, real for the full one). The output
+            # row's handedness_matchup column is left as the row's real
+            # matchup, exactly as before — the reconciliation marts group by
+            # it, so this refactor must not change that value. Changing the
+            # reduced row's attribution is a product decision for its own ADR.
+            out = dict(row_dict)
+            out["signal_value"] = signal_value
+            out["confidence_band"] = confidence_band
+            out["lineup_state_at_emission"] = lineup_state_at_emission
+            output_rows.append(out)
 
     return pd.DataFrame(output_rows)

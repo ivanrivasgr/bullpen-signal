@@ -100,3 +100,44 @@ def derive_handedness_matchup(
     if pitcher_handedness is None or batter_handedness is None:
         return None
     return f"{pitcher_handedness}_vs_{batter_handedness}"
+
+
+def plan_signal_emissions(
+    lineup_state: str,
+    handedness_matchup: str | None,
+    projected_handedness_matchup: str | None,
+    has_projection: bool,
+) -> list[tuple[str | None, str]]:
+    """Decide how many signals a pitch emits, and from which inputs.
+
+    Returns a list of (matchup, emission_lineup_state) pairs. Each pair is
+    fed to compute_signal_fields to produce one signal row. This is the
+    expansion logic of silver_matchup_signals (ADR 0020), factored out so
+    the batch dbt model and the streaming Flink job plan emissions the
+    same way and cannot drift. It decides only the expansion; the signal
+    value itself comes from compute_signal_fields.
+
+    Three cases, matching the documented emission model:
+
+    - An uncertain pitch with a projection emits TWO signals: a reduced
+      one from the projected handedness (what the system knew during the
+      window, emitted as uncertain), and a full one from the real
+      handedness (the resolution, emitted as confirmed). The reduced
+      emission comes first so it sorts before the resolution.
+
+    - An uncertain pitch with no projection emits ONE signal from the
+      real handedness, still as uncertain — the system was in doubt but
+      had nothing to project, so there is no second emission to confirm.
+
+    - A confirmed pitch emits ONE signal from the real handedness, as
+      confirmed.
+    """
+    if lineup_state == "uncertain" and has_projection:
+        return [
+            (projected_handedness_matchup, "uncertain"),
+            (handedness_matchup, "confirmed"),
+        ]
+    # Confirmed, or uncertain-without-projection: a single emission using
+    # the pitch's own lineup_state, so uncertain-without-projection still
+    # records a reduced band honestly.
+    return [(handedness_matchup, lineup_state)]
