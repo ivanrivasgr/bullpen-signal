@@ -6,11 +6,14 @@ and returns a MatchupSignal Pydantic model with:
 
 - signal_value: the matchup edge in the pitcher's direction. Positive
   means advantage pitcher; negative means advantage batter. Magnitudes
-  are placeholders calibrated against handedness only — they are not
-  calibrated against historical outcomes yet. ADR 0008 established the
-  precedent of declared-arbitrary thresholds; this module follows the
-  same pattern and will be replaced with calibrated values in Phase 3
-  once the reconciliation layer produces correction-rate data.
+  are placeholders keyed on handedness only — they are not calibrated
+  against historical outcomes. ADR 0008 established the precedent of
+  declared-arbitrary thresholds; this module follows the same pattern.
+  Phase 3 built the reconciliation layer that produces correction rates,
+  but did not calibrate these magnitudes: the multi-day validation
+  (docs/phase3/validation_2026_06_11_multiday.md) showed the rates need
+  full-season volume before they support calibration. Calibration is
+  therefore deferred to a future data pull, not done in Phase 3.
 
 - confidence_band: one of {full, reduced, suppressed}. Mapped directly
   from lineup_state per ADR 0016: confirmed -> full, uncertain ->
@@ -21,7 +24,10 @@ and returns a MatchupSignal Pydantic model with:
   filter by it without re-joining to the matchup events table.
 
 This module is intentionally pure: no I/O, no logging side effects, no
-state. The replay engine and the future Flink job both call into it.
+state. The replay engine calls into it for the batch path. The streaming
+Flink job does not call this directly — it calls the Pydantic-free core
+in signals.matchup_core, since the Flink runtime has no Pydantic. Both
+paths share that core, so they cannot drift (ADR 0021).
 """
 
 from __future__ import annotations
