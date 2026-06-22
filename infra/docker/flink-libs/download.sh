@@ -12,8 +12,8 @@ cd "$SCRIPT_DIR"
 # Format: filename|url
 declare -a JARS=(
     "flink-sql-connector-kafka-3.4.0-1.20.jar|https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.4.0-1.20/flink-sql-connector-kafka-3.4.0-1.20.jar"
-    "flink-avro-1.20.0.jar|https://repo.maven.apache.org/maven2/org/apache/flink/flink-avro/1.20.0/flink-avro-1.20.0.jar"
-    "flink-sql-avro-confluent-registry-1.20.0.jar|https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-avro-confluent-registry/1.20.0/flink-sql-avro-confluent-registry-1.20.0.jar"
+    "flink-avro-1.20.3.jar|https://repo.maven.apache.org/maven2/org/apache/flink/flink-avro/1.20.3/flink-avro-1.20.3.jar"
+    "flink-sql-avro-confluent-registry-1.20.3.jar|https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-avro-confluent-registry/1.20.3/flink-sql-avro-confluent-registry-1.20.3.jar"
     "avro-1.11.3.jar|https://repo.maven.apache.org/maven2/org/apache/avro/avro/1.11.3/avro-1.11.3.jar"
     "jackson-core-2.14.2.jar|https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.14.2/jackson-core-2.14.2.jar"
     "jackson-databind-2.14.2.jar|https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.14.2/jackson-databind-2.14.2.jar"
