@@ -36,7 +36,13 @@ def refresh_sources() -> dict[str, dict[str, str]]:
         "bronze.pitches": {
             "metadata_location": _table_metadata_location("bronze.pitches"),
             "refreshed_at": now,
-        }
+        },
+        # The reconciliation reads the streaming matchup signal (ADR 0023),
+        # so its metadata location must be resolved alongside bronze.
+        "streaming.matchup_signals": {
+            "metadata_location": _table_metadata_location("streaming.matchup_signals"),
+            "refreshed_at": now,
+        },
     }
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
