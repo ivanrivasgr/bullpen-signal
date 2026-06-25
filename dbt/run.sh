@@ -23,6 +23,11 @@ LOCATION=$(python -c "import json; print(json.load(open('dbt/.iceberg_sources.js
 
 python infra/scripts/materialize_dbt_sources.py --metadata-location "$LOCATION"
 
+# The reconciliation reads the streaming matchup signal (ADR 0023), so its
+# Iceberg snapshot is materialized into DuckDB alongside bronze before dbt runs.
+STREAMING_LOCATION=$(python -c "import json; print(json.load(open('dbt/.iceberg_sources.json'))['streaming.matchup_signals']['metadata_location'])")
+python infra/scripts/materialize_dbt_sources.py --metadata-location "$STREAMING_LOCATION" --namespace streaming --table matchup_signals
+
 cd dbt
 dbt run --profiles-dir . "$@"
 
