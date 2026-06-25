@@ -32,3 +32,40 @@ sources:
           - name: source_offset
             tests:
               - not_null
+
+  - name: streaming
+    schema: streaming
+    description: Streaming matchup signals written by the Flink job (ADR 0022, ADR 0023).
+    tables:
+      - name: matchup_signals
+        description: Current Iceberg snapshot of matchup signals emitted by the streaming path.
+        columns:
+          - name: event_time
+            tests:
+              - not_null
+          - name: game_pk
+            tests:
+              - not_null
+          - name: at_bat_number
+            tests:
+              - not_null
+          - name: pitch_number
+            tests:
+              - not_null
+          - name: pitcher_id
+            tests:
+              - not_null
+          - name: batter_id
+            tests:
+              - not_null
+          - name: signal_value
+            tests:
+              - not_null
+          - name: confidence_band
+            tests:
+              - not_null
+          - name: lineup_state_at_emission
+            tests:
+              - not_null
+          # handedness_matchup is intentionally nullable (ADR 0022): a player
+          # absent from the handedness seed yields a null matchup.
