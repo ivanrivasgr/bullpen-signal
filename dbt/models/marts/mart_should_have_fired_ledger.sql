@@ -14,8 +14,14 @@
 -- mart_canonical_outcomes so reconciliation can answer the
 -- "should we have fired" question retrospectively.
 --
+-- The reduced and suppressed signals read here come from the streaming
+-- matchup signal table, not the batch model (ADR 0023): these are the
+-- decisions the real-time path made under uncertainty, which is what the
+-- "should we have fired" question evaluates. The batch model still
+-- produces its own signals; the ledger evaluates the streaming path's.
+--
 -- would_have_been_correct is a heuristic, not a calibrated metric.
--- The matchup signal_value carried by silver_matchup_signals is a
+-- The matchup signal_value carried by the streaming signal is a
 -- placeholder per ADR 0016 (the magnitudes encode handedness intuition
 -- but are not calibrated against outcomes yet). The heuristic asks:
 -- if the signal pointed toward the pitcher (positive signal_value) and
@@ -40,8 +46,28 @@ WITH suppressed_or_reduced_signals AS (
         sms.confidence_band,
         sms.lineup_state_at_emission,
         sms.event_time AS signal_event_time
-    FROM {{ ref("silver_matchup_signals") }} AS sms
+    FROM {{ source("streaming", "matchup_signals") }} AS sms
     WHERE sms.confidence_band IN ('reduced', 'suppressed')
+    -- The stream is delivered at-least-once: Kafka can hand the same event to
+    -- the job more than once, so a byte-identical emission (same pitch, same
+    -- event_time, same band, same value, same lineup state) can appear twice.
+    -- That is one logical event delivered twice, not two facts, so we process
+    -- it idempotently and keep one delivery. This is NOT a noise filter: a
+    -- late arrival re-sends with a different event_time and is kept (it is a
+    -- real observation the real-time path made at another moment), and the
+    -- reduced/full double emission differs by band and is kept. Only exact
+    -- redelivery of the same emission collapses.
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY
+            sms.game_pk,
+            sms.at_bat_number,
+            sms.pitch_number,
+            sms.event_time,
+            sms.confidence_band,
+            sms.signal_value,
+            sms.lineup_state_at_emission
+        ORDER BY sms.event_time
+    ) = 1
 ),
 
 with_outcomes AS (
