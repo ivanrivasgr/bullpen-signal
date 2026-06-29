@@ -1,0 +1,41 @@
+version: 2
+
+seeds:
+  - name: leverage_index_tango
+    description: >
+      Leverage Index by game state, from Tom Tango's published "Complete
+      Leverage Index Chart" (insidethebook.com/li.shtml). LI measures how much
+      the win probability can swing on the next event; 1.0 is an average
+      situation, higher is more leveraged. Keyed by inning, half, base-out
+      state, and home-team score differential. Source attributed to Tom Tango;
+      used here for non-commercial analysis per the source's terms.
+    columns:
+      - name: inning
+        description: Inning number, 1-9 (extra innings map to 9 in the model).
+        tests: [not_null]
+      - name: half_inning
+        description: "'top' or 'bot'."
+        tests:
+          - not_null
+          - accepted_values: {values: ['top', 'bot']}
+      - name: score_diff
+        description: Home-team score differential, -4 to +4.
+        tests: [not_null]
+      - name: leverage_index
+        description: The leverage index value for this game state.
+        tests: [not_null]
+
+models:
+  - name: silver_leverage_index
+    description: >
+      Per-pitch Leverage Index, joined from the Tango LI seed by game state
+      (inning, half, base-out, clamped score differential). Leverage is a
+      property of the game state, identical for the streaming and canonical
+      reads except where a correction changed the state (ADR 0026, D4).
+    columns:
+      - name: leverage_index
+        description: The Tango LI for this pitch's game state.
+        tests:
+          - not_null
+      - name: game_pk
+        tests: [not_null]

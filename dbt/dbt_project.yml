@@ -28,3 +28,13 @@ seeds:
         player_id: bigint
         role: varchar
         hand: varchar
+    leverage_index_tango:
+      +column_types:
+        inning: integer
+        half_inning: varchar
+        on_1b: integer
+        on_2b: integer
+        on_3b: integer
+        outs: integer
+        score_diff: integer
+        leverage_index: double
