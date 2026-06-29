@@ -65,7 +65,7 @@ Commit: feat(dbt): leverage index signal from game state [ADR 0026]
 - Test: not_null on the key; components in [0,1].
 Commit: feat(dbt): per-pitch fatigue signal from rolling deltas [ADR 0026]
 
-### STEP 4 — Unified long signal values
+### STEP 4 — Unified long signal values — DONE (88ee634)
 - Model: `dbt/models/marts/mart_signal_values_long.sql` — one row per
   (game_pk, at_bat, pitch, signal_name) with streaming_value and canonical_value
   for all three signals.
@@ -110,27 +110,27 @@ Commit: feat(dashboard): wire dashboard to real data
 ## STATUS (the single source of truth — update every session)
 
 **Last updated:** 2026-06-27
-**main:** 31c88b4 — fatigue signal via Mahalanobis [ADR 0026]. Synced with origin.
+**main:** 88ee634 — unified long signal values [ADR 0026]. Synced with origin.
 **Stack:** docker compose up -d (Docker Desktop running).
-**Tests:** 257 unit green; reconciliation 20/20; leverage 7/7; fatigue 2/2.
+**Tests:** 257 unit green; reconciliation 20/20; leverage 7/7; fatigue 2/2; signal-values 2/2.
 
-**Next open step:** STEP 4 (unified long signal values).
+**Next open step:** STEP 5 (batch alert orchestrator).
 
 **Sequence progress:**
 - [x] STEP 1 — ADR 0026
 - [x] STEP 2 — Leverage Index
 - [x] STEP 3 — Fatigue signal
-- [ ] STEP 4 — Unified long signal values
+- [x] STEP 4 — Unified long signal values
 - [ ] STEP 5 — Alert orchestrator
 - [ ] STEP 6 — mart_signal_reconciliation
 - [ ] STEP 7 — real_data.py
 - [ ] STEP 8 — wire dashboard
 
-**Last session notes:** STEPS 2 and 3 done. Leverage = Tango's published LI
-chart (seed, mean 1.025 confirms faithful join). Fatigue = Mahalanobis distance
-of velo/spin/command from each pitcher's fresh in-game baseline, per Dillon et
-al. 2025 (Yankees team physician); verified fatigue rises late in long outings
-(2.22 vs 1.57 baseline). Both computed identically for streaming and canonical
-reads. Next: STEP 4, mart_signal_values_long joining all three signals
-(leverage, fatigue, matchup) with streaming_value and canonical_value side by
-side.
+**Last session notes:** STEPS 2-4 done. Leverage (Tango LI seed, mean 1.025),
+fatigue (Mahalanobis vs pitcher baseline, rises late in outings), both unified
+with matchup in mart_signal_values_long. Leverage/fatigue have delta 0
+(deterministic from input, D4); matchup diverges on 41 pitches (projected vs
+confirmed lineup) -- the real reconciliation signal. Next: STEP 5, the batch
+alert orchestrator (mart_alerts) composing the three signals into alerts. STEP 5
+needs product decisions: severity thresholds (info/warning/action) and how the
+composite score combines the three signals -- decide deliberately, do not invent.
