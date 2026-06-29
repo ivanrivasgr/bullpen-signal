@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: mart_signal_values_long
+    description: >
+      One row per pitch per signal (leverage, fatigue, matchup), with the
+      streaming and canonical values side by side in each signal's native units.
+      Per ADR 0026 D4, leverage and fatigue depend only on the game state and
+      pitch-tracking values, so their streaming and canonical values are equal
+      (delta arises only on a correction); matchup has two distinct sources (the
+      streaming emission under uncertainty vs the batch-canonical value) and so
+      can diverge, which is the reconciliation's point (ADR 0001).
+    columns:
+      - name: signal
+        description: "leverage, fatigue, or matchup."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['leverage', 'fatigue', 'matchup']
+      - name: game_pk
+        tests: [not_null]
+      - name: streaming_value
+        description: The signal value the real-time path produced (or the shared value for leverage/fatigue).
+      - name: canonical_value
+        description: The batch-canonical signal value.
