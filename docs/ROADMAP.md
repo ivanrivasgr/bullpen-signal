@@ -59,7 +59,7 @@ All six are recorded in ADR 0026.
 - Test: not_null on the key; LI in a plausible range.
 Commit: feat(dbt): leverage index signal from game state [ADR 0026]
 
-### STEP 3 — Real per-pitch fatigue signal (D2)
+### STEP 3 — Real per-pitch fatigue signal (D2) — DONE (31c88b4)
 - Model: `dbt/models/silver/silver_fatigue_signal.sql` — rolling velo/spin/command
   vs the pitcher's baseline, per pitch, components separate.
 - Test: not_null on the key; components in [0,1].
@@ -110,24 +110,27 @@ Commit: feat(dashboard): wire dashboard to real data
 ## STATUS (the single source of truth — update every session)
 
 **Last updated:** 2026-06-27
-**main:** 5faee52 — leverage index signal [ADR 0026]. Synced with origin.
+**main:** 31c88b4 — fatigue signal via Mahalanobis [ADR 0026]. Synced with origin.
 **Stack:** docker compose up -d (Docker Desktop running).
-**Tests:** 257 unit green; reconciliation 20/20; leverage 7/7.
+**Tests:** 257 unit green; reconciliation 20/20; leverage 7/7; fatigue 2/2.
 
-**Next open step:** STEP 3 (per-pitch fatigue signal).
+**Next open step:** STEP 4 (unified long signal values).
 
 **Sequence progress:**
 - [x] STEP 1 — ADR 0026
 - [x] STEP 2 — Leverage Index
-- [ ] STEP 3 — Fatigue signal
+- [x] STEP 3 — Fatigue signal
 - [ ] STEP 4 — Unified long signal values
 - [ ] STEP 5 — Alert orchestrator
 - [ ] STEP 6 — mart_signal_reconciliation
 - [ ] STEP 7 — real_data.py
 - [ ] STEP 8 — wire dashboard
 
-**Last session notes:** STEP 2 done. Built silver_leverage_index from Tango's
-published LI chart (3696-row seed, attributed). Every one of 53817 pitches
-matched a real game state; mean LI is 1.025, confirming the join is faithful
-(the index averages 1.0 by construction). Next: STEP 3, the per-pitch fatigue
-signal from rolling velo/spin/command deltas vs the pitcher's baseline.
+**Last session notes:** STEPS 2 and 3 done. Leverage = Tango's published LI
+chart (seed, mean 1.025 confirms faithful join). Fatigue = Mahalanobis distance
+of velo/spin/command from each pitcher's fresh in-game baseline, per Dillon et
+al. 2025 (Yankees team physician); verified fatigue rises late in long outings
+(2.22 vs 1.57 baseline). Both computed identically for streaming and canonical
+reads. Next: STEP 4, mart_signal_values_long joining all three signals
+(leverage, fatigue, matchup) with streaming_value and canonical_value side by
+side.
