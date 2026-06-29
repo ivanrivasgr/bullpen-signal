@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: silver_fatigue_signal
+    description: >
+      Per-pitch in-game fatigue as the Mahalanobis distance of each pitch's
+      tracking features (velocity, spin, command) from the pitcher's own fresh
+      in-game baseline. Follows the in-game mechanical-deviation framework of
+      Dillon et al. (2025, Orthopaedic Journal of Sports Medicine; senior author
+      is the New York Yankees' head team physician): features standardized within
+      pitcher, Mahalanobis distance for multivariate deviation accounting for
+      feature correlation. Uses three of the paper's five features (the bronze
+      Statcast feed lacks arm angle, extension, and acceleration); a known,
+      documented gap (ADR 0026, D2). Pitcher-games with fewer than 15 pitches
+      have null fatigue (no stable baseline), an honest gap rather than a
+      fabricated value.
+    columns:
+      - name: game_pk
+        tests: [not_null]
+      - name: pitcher_id
+        tests: [not_null]
+      - name: fatigue
+        description: >
+          Mahalanobis distance from the pitcher's fresh baseline. Higher means
+          greater multivariate deviation from typical mechanics. Null where the
+          pitcher threw fewer than 15 pitches in the game.
