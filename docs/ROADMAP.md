@@ -51,7 +51,7 @@ All six are recorded in ADR 0026.
 ### STEP 1 — ADR 0026 (decisions written) — DONE
 `docs/adr/0026-dashboard-reconciliation-scope.md` with D1-D6.
 
-### STEP 2 — Real Leverage Index (D1)
+### STEP 2 — Real Leverage Index (D1) — DONE (5faee52)
 - Seed: `dbt/seeds/leverage_index_table.csv` (LI by base-out state, with inning
   and score-diff adjustment; document the source in the ADR).
 - Model: `dbt/models/silver/silver_leverage_index.sql` — one LI value per pitch
@@ -109,16 +109,16 @@ Commit: feat(dashboard): wire dashboard to real data
 
 ## STATUS (the single source of truth — update every session)
 
-**Last updated:** 2026-06-26
-**main:** 6456080 — ledger reads streaming [ADR 0023]. Synced with origin.
+**Last updated:** 2026-06-27
+**main:** 5faee52 — leverage index signal [ADR 0026]. Synced with origin.
 **Stack:** docker compose up -d (Docker Desktop running).
-**Tests:** 257 unit green; reconciliation 20/20.
+**Tests:** 257 unit green; reconciliation 20/20; leverage 7/7.
 
-**Next open step:** STEP 2 (Leverage Index).
+**Next open step:** STEP 3 (per-pitch fatigue signal).
 
 **Sequence progress:**
 - [x] STEP 1 — ADR 0026
-- [ ] STEP 2 — Leverage Index
+- [x] STEP 2 — Leverage Index
 - [ ] STEP 3 — Fatigue signal
 - [ ] STEP 4 — Unified long signal values
 - [ ] STEP 5 — Alert orchestrator
@@ -126,8 +126,8 @@ Commit: feat(dashboard): wire dashboard to real data
 - [ ] STEP 7 — real_data.py
 - [ ] STEP 8 — wire dashboard
 
-**Last session notes:** Reverted an error (noise filters in the job to pass a
-test, ADR 0024/0025) via reset+force push; main is clean. The ledger now uses
-idempotency over exact redeliveries and keeps late arrivals as divergence.
-Established that the dashboard needs three signals (only matchup existed); this
-roadmap is the plan to build the other two MLB-grade and wire the dashboard.
+**Last session notes:** STEP 2 done. Built silver_leverage_index from Tango's
+published LI chart (3696-row seed, attributed). Every one of 53817 pitches
+matched a real game state; mean LI is 1.025, confirming the join is faithful
+(the index averages 1.0 by construction). Next: STEP 3, the per-pitch fatigue
+signal from rolling velo/spin/command deltas vs the pitcher's baseline.
