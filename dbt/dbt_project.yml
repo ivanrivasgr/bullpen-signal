@@ -38,3 +38,8 @@ seeds:
         outs: integer
         score_diff: integer
         leverage_index: double
+    player_names:
+      +column_types:
+        player_id: bigint
+        name_last: varchar
+        name_first: varchar

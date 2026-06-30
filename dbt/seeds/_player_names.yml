@@ -1,0 +1,15 @@
+version: 2
+
+seeds:
+  - name: player_names
+    description: >
+      MLBAM player id to name, from the Chadwick Bureau public register
+      (github.com/chadwickbureau/register). Resolves the pitcher_id / batter_id
+      values in the data to real names. Source attributed to the Chadwick Bureau;
+      used for non-commercial analysis. Ids with no register match keep empty
+      names rather than fabricated ones.
+    columns:
+      - name: player_id
+        tests: [not_null, unique]
+      - name: name_last
+        description: Surname, or empty if unresolved.
