@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: mart_signal_reconciliation
+    description: >
+      The dashboard's reconciliation table: one row per alert per component
+      signal, with the streaming value, the canonical value, the delta, and the
+      classification (ADR 0026 D6). For each alert from mart_alerts it brings the
+      three signals' streaming and canonical values at the alert's pitch and
+      classifies the delta. Leverage and fatigue are confirmed (streaming equals
+      canonical, D4); matchup is where divergence appears. On the six-game sample
+      this is mostly confirmed with one reversal -- the real reconciliation, not
+      a synthetic narrative; richer divergence needs full-season volume.
+    columns:
+      - name: alert_uid
+        tests: [not_null]
+      - name: signal
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['leverage', 'fatigue', 'matchup']
+      - name: classification
+        description: One of the five dashboard classes.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['confirmed', 'softened', 'escalated', 'reversed', 'confirmed_late']
