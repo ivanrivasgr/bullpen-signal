@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: mart_alerts
+    description: >
+      Batch pitcher-removal alerts composed from the three signals (ADR 0026
+      D5). The composition follows how a club decides to pull a starter, as the
+      literature frames it: pitcher decline (fatigue, the Mahalanobis signal),
+      situation (Leverage Index, Tango), and the times-through-the-order penalty
+      (familiarity; Tango et al. 2007). Decline is treated as continuous rather
+      than a hard third-time-through cutoff, following Brill et al. (2023), who
+      find no sharp discontinuity at the 3rd TTO. Severity thresholds are
+      anchored to published references (Tango's leverage bands, the fatigue
+      paper's 90th/95th-percentile cuts), not invented (ADR 0026 D6).
+    columns:
+      - name: alert_uid
+        description: Stable id from pitch identity and severity.
+        tests:
+          - not_null
+          - unique
+      - name: severity
+        description: "info, warning, or action."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['info', 'warning', 'action']
+      - name: game_pk
+        tests: [not_null]
+      - name: composite_score
+        description: Continuous product of decline, situation, and TTO factors.
+        tests: [not_null]
