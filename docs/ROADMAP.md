@@ -72,7 +72,7 @@ Commit: feat(dbt): per-pitch fatigue signal from rolling deltas [ADR 0026]
 - Test: signal_name in {leverage, fatigue, matchup}; both values not_null.
 Commit: feat(dbt): unified long signal values, streaming vs canonical
 
-### STEP 5 — Batch alert orchestrator (D5)
+### STEP 5 — Batch alert orchestrator (D5) — DONE (3aa0d1f)
 - Model: `dbt/models/marts/mart_alerts.sql` — composes the three signals into
   alerts with composite_score, threshold, severity, rationale, alert_uid.
 - Test: each alert has >=1 component signal; severity in the valid set.
@@ -110,27 +110,29 @@ Commit: feat(dashboard): wire dashboard to real data
 ## STATUS (the single source of truth — update every session)
 
 **Last updated:** 2026-06-27
-**main:** 88ee634 — unified long signal values [ADR 0026]. Synced with origin.
+**main:** 3aa0d1f — batch alert orchestrator [ADR 0026]. Synced with origin.
 **Stack:** docker compose up -d (Docker Desktop running).
 **Tests:** 257 unit green; reconciliation 20/20; leverage 7/7; fatigue 2/2; signal-values 2/2.
 
-**Next open step:** STEP 5 (batch alert orchestrator).
+**Next open step:** STEP 6 (per-alert reconciliation mart).
 
 **Sequence progress:**
 - [x] STEP 1 — ADR 0026
 - [x] STEP 2 — Leverage Index
 - [x] STEP 3 — Fatigue signal
 - [x] STEP 4 — Unified long signal values
-- [ ] STEP 5 — Alert orchestrator
+- [x] STEP 5 — Alert orchestrator
 - [ ] STEP 6 — mart_signal_reconciliation
 - [ ] STEP 7 — real_data.py
 - [ ] STEP 8 — wire dashboard
 
-**Last session notes:** STEPS 2-4 done. Leverage (Tango LI seed, mean 1.025),
+**Last session notes:** STEPS 2-5 done. Leverage (Tango LI seed, mean 1.025),
 fatigue (Mahalanobis vs pitcher baseline, rises late in outings), both unified
 with matchup in mart_signal_values_long. Leverage/fatigue have delta 0
 (deterministic from input, D4); matchup diverges on 41 pitches (projected vs
-confirmed lineup) -- the real reconciliation signal. Next: STEP 5, the batch
-alert orchestrator (mart_alerts) composing the three signals into alerts. STEP 5
-needs product decisions: severity thresholds (info/warning/action) and how the
-composite score combines the three signals -- decide deliberately, do not invent.
+confirmed lineup) -- the real reconciliation signal. STEP 5 (mart_alerts) composes the three into pitcher-removal alerts following
+the removal literature (decline x leverage x TTO, continuous per Brill 2023,
+thresholds from Tango bands + fatigue paper p95); 2302 alerts, 84 action, 50 of
+1527 pitcher-games -- appropriately selective. Next: STEP 6,
+mart_signal_reconciliation joining alerts to signal values in the dashboard's
+ReconciliationRow shape with the D6 classification.
