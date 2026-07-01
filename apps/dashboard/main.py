@@ -1,8 +1,9 @@
 """Bullpen Signal — dashboard.
 
 Scouting report aesthetic. Editorial layout, serif headers, monospace
-numerics. Phase 0 renders against a synthetic narrative; Phase 1 wires
-the same shapes to the live Kafka topics.
+numerics. Reads from the project's marts via real_data: the live-dugout and
+canonical tabs show one game (Castillo, 745273); the reconciliation tab shows
+the streaming-vs-canonical divergence across the full sample.
 
 Run:
     streamlit run apps/dashboard/main.py
@@ -18,7 +19,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent))
-import synthetic_data as sd
+import real_data as sd
 
 # ----------------------------------------------------------------------------
 # Page setup
@@ -522,24 +523,24 @@ def _fatigue_line_chart(signals_data, *, highlight_pitch: int | None = None) -> 
     fig.add_trace(
         go.Scatter(
             x=xs,
-            y=[v / 3.5 for v in ls],
+            y=ls,
             mode="lines",
             line=dict(color="#B8722A", width=1.8, dash="dot"),
-            name="leverage (scaled)",
+            name="leverage",
             hovertemplate="pitch %{x}<br>leverage %{customdata:.2f}<extra></extra>",
             customdata=ls,
         )
     )
     # threshold lines without clashing annotations inside plot
-    fig.add_hline(y=0.55, line=dict(color="#C7700F", width=1, dash="dash"))
-    fig.add_hline(y=0.70, line=dict(color="#8B2818", width=1.4, dash="dash"))
+    fig.add_hline(y=3.2, line=dict(color="#C7700F", width=1, dash="dash"))
+    fig.add_hline(y=4.0, line=dict(color="#8B2818", width=1.4, dash="dash"))
     # put threshold labels on the right side, outside the chart area
     fig.add_annotation(
         x=1.005,
-        y=0.55,
+        y=3.2,
         xref="paper",
         yref="y",
-        text="warning 0.55",
+        text="warning 3.2",
         showarrow=False,
         font=dict(family="JetBrains Mono", size=10, color="#C7700F"),
         xanchor="left",
@@ -547,10 +548,10 @@ def _fatigue_line_chart(signals_data, *, highlight_pitch: int | None = None) -> 
     )
     fig.add_annotation(
         x=1.005,
-        y=0.70,
+        y=4.0,
         xref="paper",
         yref="y",
-        text="action 0.70",
+        text="action 4.0",
         showarrow=False,
         font=dict(family="JetBrains Mono", size=10, color="#8B2818"),
         xanchor="left",
@@ -588,9 +589,9 @@ def _fatigue_line_chart(signals_data, *, highlight_pitch: int | None = None) -> 
             showgrid=True,
             gridcolor="#E0D5B8",
             zeroline=False,
-            range=[0.15, 0.95],
+            range=[0, 6],
             tickfont=dict(color="#4A5875"),
-            tickvals=[0.2, 0.4, 0.55, 0.7, 0.8],
+            tickvals=[1, 2, 3.2, 4, 5],
         ),
         legend=dict(
             orientation="h",
@@ -720,15 +721,15 @@ with tab_live:
 <div class="context-strip">
   <div class="context-cell">
     <div class="context-label">Inning</div>
-    <div class="context-value">7 · Top</div>
+    <div class="context-value">6 · Top</div>
   </div>
   <div class="context-cell">
     <div class="context-label">Score</div>
-    <div class="context-value">{ctx.away_team} 3 — {ctx.home_team} 2</div>
+    <div class="context-value">Home 0 — Away 4</div>
   </div>
   <div class="context-cell">
     <div class="context-label">Bases / Outs</div>
-    <div class="context-value">1st, 2nd · 1 out</div>
+    <div class="context-value">empty · 1 out</div>
   </div>
   <div class="context-cell">
     <div class="context-label">Count · Pitch #</div>
@@ -778,23 +779,23 @@ with tab_live:
 <div class="pitcher-card">
   <div class="pitcher-heading">
     <h3 class="pitcher-name">{pitcher.name}</h3>
-    <div class="pitcher-meta">#{pitcher.jersey} · {pitcher.throws}HP · {pitcher.team}</div>
+    <div class="pitcher-meta">{pitcher.throws}HP</div>
   </div>
   <div class="pitcher-stats">
     <div>
       <div class="pstat-label">Pitches</div>
       <div class="pstat-value">{current_pitch}</div>
-      <div class="pstat-delta">7.0 IP · 3 ER</div>
+      <div class="pstat-delta">{pitcher.ip_outs // 3}.{pitcher.ip_outs % 3} IP · {pitcher.runs} R</div>
     </div>
     <div>
       <div class="pstat-label">Velo (avg)</div>
-      <div class="pstat-value">91.8</div>
-      <div class="pstat-delta">-2.5 vs first 20</div>
+      <div class="pstat-value">{pitcher.season_velo_avg}</div>
+      <div class="pstat-delta">{pitcher.velo_delta:+.1f} vs baseline</div>
     </div>
     <div>
       <div class="pstat-label">Spin</div>
-      <div class="pstat-value">2135</div>
-      <div class="pstat-delta">-177 vs baseline</div>
+      <div class="pstat-value">{pitcher.season_spin_avg:.0f}</div>
+      <div class="pstat-delta">{pitcher.spin_delta:+.0f} vs baseline</div>
     </div>
   </div>
 </div>
@@ -824,7 +825,7 @@ with tab_live:
       <span class="signal-status-dot warning"></span>
     </div>
     <div class="signal-value">{current_signal.leverage:.2f}</div>
-    <div class="signal-caption">Runner in scoring position, one-run game, late innings. Every out is disproportionately valuable.</div>
+    <div class="signal-caption">Bases empty, down four, sixth inning. Low-leverage situation; game is largely decided.</div>
   </div>
   <div class="signal-tile">
     <div class="signal-tile-head">
@@ -847,9 +848,9 @@ with tab_live:
   <h2 class="section-title">Analysis</h2>
 </div>
 <p class="analysis">
-Through five innings this was a clean outing. The first twenty-pitch baseline sat at ninety-four and a half with spin holding steady near the season average, and command was crisp enough to work the edges without walking himself into trouble.
-The slide began quietly in the sixth, the kind of degradation that does not show up in a box score until the runs already scored. Velocity drifted down two ticks, the breaking ball lost separation, and the zone percentage dipped from the mid-sixties to the low fifties.
-By the seventh it was unambiguous. The composite score has crossed the action threshold, leverage is elevated with men on, and the next batter owns a strong profile against a tiring fastball. Streaming has done its job. The question now is what batch will say in four hours and whether it will agree.
+Castillo's velocity held better than the box score suggests. The fresh baseline over his first fifteen pitches sat at 94.3 mph; his last fifteen averaged 92.6, a real but modest drop of under two ticks, with spin falling about eighty revolutions over the same span. This was not a pitcher who fell off a cliff.
+What the fatigue signal caught was intermittent, not a single late slide. The Mahalanobis distance crossed the action threshold in the second inning and again in the fourth and fifth &mdash; individual pitches that deviated sharply from his own baseline, scattered through the outing rather than concentrated at the end. His command did not come apart: zone rate actually rose from the low seventies to eighty percent across the game, and he issued no walks.
+The result was a working six innings &mdash; ten hits, seven strikeouts, no walks &mdash; that drew two warning-level alerts and six informational ones, but never an action call. The orchestrator read a pitcher grinding through mechanical noise, not one who had to come out. Whether batch, recomputing later on the corrected and complete record, reads the same is what the reconciliation tab settles.
 </p>
 """,
         unsafe_allow_html=True,
@@ -892,13 +893,14 @@ with tab_canon:
   <h2 class="section-title">Canonical game record</h2>
 </div>
 <p class="analysis" style="column-count: 1;">
-This is what batch recomputed three hours and twelve minutes after the final out, once late-arriving pitches were reconciled, one pitch-type classification was corrected by MLB official scoring, and season splits were joined in full. The numbers here are the reference against which every streaming signal above is measured.
+This is the canonical record: the same signals recomputed over the complete, corrected pitch data rather than the point-in-time stream. Late-arriving pitches sit in their true order, exact redeliveries are collapsed, and every value is derived from the full record instead of what had arrived by emission. These numbers are the reference against which every streaming signal above is measured; where the two disagree, the reconciliation tab shows exactly where and why.
 </p>
 """,
         unsafe_allow_html=True,
     )
 
     canon_pitcher = sd.active_pitcher()
+    canon_total_pitches = len(sd.pitch_log())
     st.markdown(
         f"""
 <div class="pitcher-card" style="margin-bottom: 1.5rem;">
@@ -907,24 +909,24 @@ This is what batch recomputed three hours and twelve minutes after the final out
       <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 400; color: #8B2818; letter-spacing: 0.1em;">
       · FINAL LINE ·</span>
     </h3>
-    <div class="pitcher-meta">#{canon_pitcher.jersey} · {canon_pitcher.throws}HP · {canon_pitcher.team}</div>
+    <div class="pitcher-meta">{canon_pitcher.throws}HP</div>
   </div>
   <div class="pitcher-stats" style="grid-template-columns: repeat(5, 1fr);">
     <div>
       <div class="pstat-label">IP</div>
-      <div class="pstat-value">6.2</div>
+      <div class="pstat-value">{canon_pitcher.ip_outs // 3}.{canon_pitcher.ip_outs % 3}</div>
     </div>
     <div>
       <div class="pstat-label">Pitches</div>
-      <div class="pstat-value">98</div>
+      <div class="pstat-value">{canon_total_pitches}</div>
     </div>
     <div>
-      <div class="pstat-label">H · ER</div>
-      <div class="pstat-value">7 · 4</div>
+      <div class="pstat-label">H · R</div>
+      <div class="pstat-value">{canon_pitcher.hits} · {canon_pitcher.runs}</div>
     </div>
     <div>
       <div class="pstat-label">K · BB</div>
-      <div class="pstat-value">5 · 3</div>
+      <div class="pstat-value">{canon_pitcher.strikeouts} · {canon_pitcher.walks}</div>
     </div>
     <div>
       <div class="pstat-label">Final velo</div>
@@ -978,8 +980,34 @@ with tab_recon:
   <h2 class="section-title">Where streaming met canonical truth</h2>
 </div>
 <p class="analysis" style="column-count: 1;">
-Every alert emitted by the streaming orchestrator is joined against the batch-canonical value for its component signals at the same game state. The delta is recorded with an outcome classification. Across this game the orchestrator fired three alerts; batch confirmed all three directional calls, softened one matchup component, and made no reversals. The action-level replace call held.
+Every streaming signal is joined against the batch-canonical value for the same pitch, and the delta is recorded with an outcome classification. The divergence is not spread through the game &mdash; it is entirely in the first two innings. Across the dataset, 41 pitches diverged, and every one is a reversal: the projected lineup gave one handedness matchup and the confirmed lineup gave the opposite. Once the batting order is confirmed, streaming and canonical agree exactly. The orchestrator's removal alerts, by contrast, fire from the fourth inning on, when the pitcher has thrown enough to fatigue and the order is long settled. The two almost never coincide &mdash; the real-time path takes its risk early, on an uncertain lineup, and makes its replace calls late, on firm information.
 </p>
+<div class="section-head">
+  <span class="section-numeral">§ II</span>
+  <h2 class="section-title">The divergence is early</h2>
+</div>
+<div class="signals-grid" style="grid-template-columns: repeat(4, 1fr);">
+  <div class="signal-tile">
+    <div class="signal-name">Inning 1</div>
+    <div class="signal-value">31</div>
+    <div class="signal-caption">streaming/canonical reversals, on the projected lineup</div>
+  </div>
+  <div class="signal-tile">
+    <div class="signal-name">Inning 2</div>
+    <div class="signal-value">10</div>
+    <div class="signal-caption">reversals, as the order finishes confirming</div>
+  </div>
+  <div class="signal-tile">
+    <div class="signal-name">Inning 3+</div>
+    <div class="signal-value">0</div>
+    <div class="signal-caption">lineup confirmed; the two reads agree exactly</div>
+  </div>
+  <div class="signal-tile">
+    <div class="signal-name">Removal alerts</div>
+    <div class="signal-value">4&ndash;6</div>
+    <div class="signal-caption">the innings where action alerts fire</div>
+  </div>
+</div>
 """,
         unsafe_allow_html=True,
     )
@@ -992,6 +1020,7 @@ Every alert emitted by the streaming orchestrator is joined against the batch-ca
         rows_html.append(f"""
 <tr>
   <td style="font-size: 0.78rem; color: #6B5A3E;">{r.alert_uid}</td>
+  <td class="num">{r.inning}</td>
   <td>{r.signal}</td>
   <td class="num">{r.streaming_value:+.3f}</td>
   <td class="num">{r.canonical_value:+.3f}</td>
@@ -1004,7 +1033,8 @@ Every alert emitted by the streaming orchestrator is joined against the batch-ca
 <table class="recon-table">
   <thead>
     <tr>
-      <th>Alert</th>
+      <th>Pitch</th>
+      <th style="text-align: right;">Inning</th>
       <th>Signal</th>
       <th style="text-align: right;">Streaming</th>
       <th style="text-align: right;">Canonical</th>
@@ -1023,7 +1053,7 @@ Every alert emitted by the streaming orchestrator is joined against the batch-ca
     st.markdown(
         """
 <div class="section-head">
-  <span class="section-numeral">§ II</span>
+  <span class="section-numeral">§ III</span>
   <h2 class="section-title">Classification legend</h2>
 </div>
 <div class="signals-grid" style="grid-template-columns: repeat(5, 1fr);">
@@ -1060,7 +1090,7 @@ Every alert emitted by the streaming orchestrator is joined against the batch-ca
 st.markdown(
     f"""
 <div class="footer-rule">
-  <span>Bullpen Signal · Phase 0 · Synthetic narrative</span>
+  <span>Bullpen Signal · Real data · game 745273 + full-sample reconciliation</span>
   <span>Rendered {datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")}</span>
 </div>
 """,
