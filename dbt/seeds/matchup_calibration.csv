@@ -1,0 +1,7 @@
+matchup,signal_value,source_group,group_split,n_batters,harmonic_pa,league_woba
+R_vs_R,0.0097,RHB,0.0194,354,39767.1,0.3198
+L_vs_R,-0.0097,RHB,0.0194,354,39767.1,0.3198
+L_vs_L,0.0187,LHB,0.0374,210,20816.8,0.3198
+R_vs_L,-0.0187,LHB,0.0374,210,20816.8,0.3198
+R_vs_S,0.0052,SWITCH,-0.0104,66,7648.5,0.3198
+L_vs_S,-0.0052,SWITCH,-0.0104,66,7648.5,0.3198

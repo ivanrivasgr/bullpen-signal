@@ -1,0 +1,56 @@
+version: 2
+
+seeds:
+  - name: matchup_calibration
+    description: |
+      Empirical handedness-matchup magnitudes from the 2024 full regular
+      season (711,898 pitches, 181,116 plate appearances), computed by
+      infra/data_prep/build_matchup_calibration.py with the delta method
+      of The Book (Tango, Lichtman, Dolphin): within-batter wOBA splits,
+      weighted by the harmonic mean of each batter's PA against either
+      pitcher side, centered on the league-neutral baseline onto the
+      ADR 0016 sign convention (positive = pitcher advantage). Reference
+      splits from The Book (2000-2004 data): RHB +0.017, LHB +0.027; this
+      pull measured RHB +0.0194 and LHB +0.0374. The switch-hitter buckets
+      carry the weakest sample (66 batters, ~7.6k harmonic PA; the split
+      is within one standard error of zero). Switch-pitcher buckets
+      (S_vs_R, S_vs_L, S_vs_S) had no 2024 data and are absent by design.
+    columns:
+      - name: matchup
+        description: Pitcher-vs-batter handedness bucket.
+        tests:
+          - not_null
+          - unique
+          - accepted_values:
+              arguments:
+                values: ['R_vs_R', 'R_vs_L', 'R_vs_S', 'L_vs_R', 'L_vs_L', 'L_vs_S']
+      - name: signal_value
+        description: Calibrated magnitude, ADR 0016 sign convention.
+        tests:
+          - not_null
+      - name: source_group
+        description: Which delta-method split produced the value.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['RHB', 'LHB', 'SWITCH']
+      - name: group_split
+        description: The measured within-batter split for the source group.
+        tests:
+          - not_null
+      - name: n_batters
+        description: Batters contributing to the source split.
+        tests:
+          - not_null
+      - name: harmonic_pa
+        description: Sum of harmonic-mean PA weights behind the split.
+        tests:
+          - not_null
+      - name: league_woba
+        description: >
+          League wOBA baseline over the same window, kept for context and
+          audit; magnitudes derive from within-batter splits and do not
+          depend on it.
+        tests:
+          - not_null
