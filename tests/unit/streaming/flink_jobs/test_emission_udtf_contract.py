@@ -46,10 +46,10 @@ class TestEmissionExpansionEqualsBatch:
         # matchup, not the real one — the heart of ADR 0020.
         rows = list(compute_emission_rows("uncertain", "L_vs_L", "L_vs_R", True))
         assert len(rows) == 2
-        # L_vs_R placeholder is -0.10; L_vs_L is 0.08. Reduced must be L_vs_R's.
-        assert rows[0][0] == -0.10
+        # L_vs_R calibrated is -0.0097; L_vs_L is +0.0187. Reduced must be L_vs_R's.
+        assert rows[0][0] == -0.0097
         assert rows[0][1] == "reduced"
-        assert rows[1][0] == 0.08
+        assert rows[1][0] == 0.0187
         assert rows[1][1] == "full"
 
     def test_null_matchup_yields_neutral(self):

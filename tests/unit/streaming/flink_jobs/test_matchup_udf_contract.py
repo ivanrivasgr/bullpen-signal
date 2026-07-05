@@ -18,7 +18,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from signals.matchup_core import _PLACEHOLDER_SIGNAL_VALUES
+from signals.matchup_calibration import CALIBRATED_SIGNAL_VALUES
 from signals.matchup_signal import generate_matchup_signal
 from streaming.flink_jobs.matchup.matchup_udf import compute_matchup_fields
 
@@ -27,8 +27,8 @@ _LINEUP_STATES = ["confirmed", "uncertain", "projected"]
 
 
 def _all_handedness_matchups() -> list[str | None]:
-    # Every key the placeholder table knows, including None (unknown).
-    return list(_PLACEHOLDER_SIGNAL_VALUES.keys())
+    # Every key the calibrated map knows, including None (unknown).
+    return list(CALIBRATED_SIGNAL_VALUES.keys())
 
 
 class TestStreamingBatchEquivalence:

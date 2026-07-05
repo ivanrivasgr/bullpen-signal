@@ -3,7 +3,7 @@
 Tests cover three concerns:
 
 1. The lineup_state -> confidence_band mapping defined in ADR 0016.
-2. The placeholder signal_value lookup per handedness_matchup.
+2. The calibrated signal_value lookup per handedness_matchup (ADR 0027).
 3. Edge cases: unknown handedness, unknown lineup_state, missing fields.
 """
 
@@ -55,24 +55,24 @@ class TestLineupStateToConfidenceBand:
             generate_matchup_signal(_base_event(lineup_state="bogus"))
 
 
-class TestPlaceholderSignalValues:
-    """The signal_value table is arbitrary but consistent across calls."""
+class TestCalibratedSignalValues:
+    """The signal_value map is calibrated from the 2024 season (ADR 0027)."""
 
     def test_r_vs_r_gives_slight_pitcher_advantage(self) -> None:
         signal = generate_matchup_signal(_base_event(handedness_matchup="R_vs_R"))
-        assert signal.signal_value == 0.05
+        assert signal.signal_value == 0.0097
 
     def test_r_vs_l_gives_batter_advantage(self) -> None:
         signal = generate_matchup_signal(_base_event(handedness_matchup="R_vs_L"))
-        assert signal.signal_value == -0.10
+        assert signal.signal_value == -0.0187
 
     def test_l_vs_r_gives_batter_advantage(self) -> None:
         signal = generate_matchup_signal(_base_event(handedness_matchup="L_vs_R"))
-        assert signal.signal_value == -0.10
+        assert signal.signal_value == -0.0097
 
     def test_l_vs_l_gives_slight_pitcher_advantage(self) -> None:
         signal = generate_matchup_signal(_base_event(handedness_matchup="L_vs_L"))
-        assert signal.signal_value == 0.08
+        assert signal.signal_value == 0.0187
 
 
 class TestUnknownHandednessMatchup:
@@ -90,23 +90,24 @@ class TestUnknownHandednessMatchup:
 
 
 class TestSwitchHandednessMatchups:
-    """Switch-hitters and switch-pitchers get specific placeholder values."""
+    """Switch-batter buckets are calibrated; switch-pitcher buckets mirror
+    the favorable side and are uncalibrated by design (ADR 0027)."""
 
     def test_r_pitcher_vs_switch_batter(self) -> None:
         signal = generate_matchup_signal(_base_event(handedness_matchup="R_vs_S"))
-        assert signal.signal_value == -0.10
+        assert signal.signal_value == 0.0052
 
     def test_l_pitcher_vs_switch_batter(self) -> None:
         signal = generate_matchup_signal(_base_event(handedness_matchup="L_vs_S"))
-        assert signal.signal_value == -0.10
+        assert signal.signal_value == -0.0052
 
     def test_switch_pitcher_vs_r_batter(self) -> None:
         signal = generate_matchup_signal(_base_event(handedness_matchup="S_vs_R"))
-        assert signal.signal_value == 0.05
+        assert signal.signal_value == 0.0097
 
     def test_switch_pitcher_vs_l_batter(self) -> None:
         signal = generate_matchup_signal(_base_event(handedness_matchup="S_vs_L"))
-        assert signal.signal_value == 0.08
+        assert signal.signal_value == 0.0187
 
     def test_switch_vs_switch_is_neutral(self) -> None:
         signal = generate_matchup_signal(_base_event(handedness_matchup="S_vs_S"))
@@ -117,13 +118,13 @@ class TestSuppressedSignalsAreStillEmitted:
     """Phase 3 needs suppressed signals to evaluate counterfactuals."""
 
     def test_projected_state_still_carries_signal_value(self) -> None:
-        """A suppressed signal is not a zeroed signal — it still carries the placeholder value
+        """A suppressed signal is not a zeroed signal — it still carries the calibrated value
         so Phase 3 can evaluate the counterfactual."""
         signal = generate_matchup_signal(
             _base_event(lineup_state="projected", handedness_matchup="R_vs_L")
         )
         assert signal.confidence_band == "suppressed"
-        assert signal.signal_value == -0.10
+        assert signal.signal_value == -0.0187
         assert signal.handedness_matchup == "R_vs_L"
 
     def test_uncertain_state_carries_signal_value(self) -> None:
@@ -131,7 +132,7 @@ class TestSuppressedSignalsAreStillEmitted:
             _base_event(lineup_state="uncertain", handedness_matchup="L_vs_L")
         )
         assert signal.confidence_band == "reduced"
-        assert signal.signal_value == 0.08
+        assert signal.signal_value == 0.0187
 
 
 class TestRequiredFields:
