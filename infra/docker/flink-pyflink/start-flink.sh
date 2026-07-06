@@ -13,6 +13,9 @@ if compgen -G "${CONNECTOR_DIR}/*.jar" >/dev/null; then
             flink-avro-confluent-registry-*.jar)
                 echo "[start-flink] skipping slim $(basename "$jar"); using flink-sql-avro-confluent-registry bundle"
                 ;;
+            flink-avro-[0-9]*.jar)
+                echo "[start-flink] skipping slim $(basename "$jar"); its classes ship shaded inside the flink-sql-avro-confluent-registry bundle"
+                ;;
             *)
                 cp -f "$jar" /opt/flink/lib/
                 ;;
