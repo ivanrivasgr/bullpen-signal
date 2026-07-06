@@ -4,3 +4,4 @@ duckdb>=1.0.0
 pyarrow>=17.0.0,<18
 pyiceberg[s3fs,pyiceberg-core]>=0.11.0,<0.12.0
 pyarrow-stubs
+pandas>=2.2.0
