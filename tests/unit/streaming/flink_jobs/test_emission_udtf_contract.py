@@ -52,6 +52,9 @@ class TestEmissionExpansionEqualsBatch:
         assert rows[1][0] == 0.0187
         assert rows[1][1] == "full"
 
-    def test_null_matchup_yields_neutral(self):
+    def test_null_matchup_yields_null_signal(self):
+        # An irresolvable matchup (None) has no computable value, so the
+        # emission carries signal_value None -- not a fabricated 0.0 (ADR 0028).
+        # The band still comes from lineup_state, so it stays "full" here.
         rows = list(compute_emission_rows("confirmed", None, None, False))
-        assert rows == [(0.0, "full", "confirmed")]
+        assert rows == [(None, "full", "confirmed")]

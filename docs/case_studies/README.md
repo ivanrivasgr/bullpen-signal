@@ -4,8 +4,8 @@ Each case study is a short, dated note tied to specific snapshots in the
 lakehouse. The pattern is always the same: a situation, what streaming
 said, what batch ultimately said, the delta, and why it mattered.
 
-Case studies are the raw material for the Medium article and for LinkedIn
-posts. Write them as you find them; do not save them for publication day.
+Each case study is written against the snapshot that produced it, close to
+when the divergence appeared, rather than reconstructed later.
 
 ## Template
 

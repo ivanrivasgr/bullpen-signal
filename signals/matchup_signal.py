@@ -60,11 +60,15 @@ class MatchupSignal(BaseModel):
             "'R_vs_L'. NULL when either side of the matchup is unknown."
         ),
     )
-    signal_value: float = Field(
+    signal_value: float | None = Field(
+        default=None,
         description=(
             "Matchup edge in the pitcher's direction. Positive favors "
-            "pitcher; negative favors batter. Placeholder values, not "
-            "calibrated against outcomes (see module docstring)."
+            "pitcher; negative favors batter. Calibrated from the 2024 "
+            "season via the delta method (ADR 0027). NULL when the matchup "
+            "is irresolvable -- a player absent from the handedness seed -- "
+            "since 'could not compute' is the absence of a value, not 0.0 "
+            "(ADR 0028)."
         ),
     )
     confidence_band: Literal["full", "reduced", "suppressed"] = Field(
@@ -97,8 +101,9 @@ def generate_matchup_signal(matchup_event: dict) -> MatchupSignal:
         pitcher_id, batter_id, lineup_state, handedness_matchup
 
     handedness_matchup may be None when either side of the matchup is
-    unknown. signal_value falls back to the None entry in the placeholder
-    table (currently 0.0) in that case.
+    unknown. In that case signal_value is None -- an irresolvable matchup
+    has no computable value, and is not collapsed to a fabricated 0.0
+    (ADR 0028).
 
     Raises:
         KeyError: if a required field is missing from matchup_event.

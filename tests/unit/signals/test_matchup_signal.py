@@ -75,18 +75,22 @@ class TestCalibratedSignalValues:
         assert signal.signal_value == 0.0187
 
 
-class TestUnknownHandednessMatchup:
-    """When the matchup is unknown, signal_value falls back to neutral (0.0)."""
+class TestIrresolvableHandednessMatchup:
+    """When the matchup is irresolvable, signal_value is None -- not 0.0.
 
-    def test_none_handedness_gives_zero_signal(self) -> None:
+    "Could not compute" is the absence of a value. A real 0.0 (S_vs_S) means
+    "computed, and neutral", a distinct fact. The prior contract collapsed the
+    two behind 0.0, which fabricated a spurious divergence downstream (ADR 0028)."""
+
+    def test_none_handedness_gives_null_signal(self) -> None:
         signal = generate_matchup_signal(_base_event(handedness_matchup=None))
-        assert signal.signal_value == 0.0
+        assert signal.signal_value is None
         assert signal.handedness_matchup is None
 
-    def test_unknown_handedness_string_also_gives_zero_signal(self) -> None:
-        """Any unrecognized matchup string falls through to the default lookup."""
+    def test_unknown_handedness_string_also_gives_null_signal(self) -> None:
+        """An unrecognized matchup string is irresolvable, so its value is None."""
         signal = generate_matchup_signal(_base_event(handedness_matchup="X_vs_Y"))
-        assert signal.signal_value == 0.0
+        assert signal.signal_value is None
 
 
 class TestSwitchHandednessMatchups:

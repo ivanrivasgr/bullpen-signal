@@ -40,7 +40,7 @@ _CONFIDENCE_BAND_BY_LINEUP_STATE: dict[str, Literal["full", "reduced", "suppress
 def compute_signal_fields(
     handedness_matchup: str | None,
     lineup_state: str,
-) -> tuple[float, str, str]:
+) -> tuple[float | None, str, str]:
     """The pure core of the matchup signal: the three scalar fields.
 
     Returns (signal_value, confidence_band, lineup_state_at_emission).
@@ -57,7 +57,15 @@ def compute_signal_fields(
             f"unknown lineup_state {lineup_state!r}; "
             f"expected one of {sorted(_CONFIDENCE_BAND_BY_LINEUP_STATE)}"
         )
-    signal_value = CALIBRATED_SIGNAL_VALUES.get(handedness_matchup, 0.0)
+    # An irresolvable matchup (handedness_matchup is None because a player is
+    # absent from the handedness seed, or an unrecognized bucket string) yields
+    # signal_value = None, NOT a fabricated 0.0. "Could not compute" is the
+    # absence of a value, not a neutral one: a real 0.0 (S_vs_S) means "computed,
+    # and neutral", which is a different fact. Collapsing the two behind 0.0 is
+    # the sentinel anti-pattern ADR 0013 rejected, and it let an uncomputable
+    # projection reach the D6 classifiers as a spurious 0.0 divergence (ADR 0028).
+    # The confidence_band still comes only from lineup_state, unchanged.
+    signal_value = CALIBRATED_SIGNAL_VALUES.get(handedness_matchup)
     confidence_band = _CONFIDENCE_BAND_BY_LINEUP_STATE[lineup_state]
     return (signal_value, confidence_band, lineup_state)
 

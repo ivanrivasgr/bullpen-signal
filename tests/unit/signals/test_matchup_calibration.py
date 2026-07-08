@@ -40,7 +40,10 @@ class TestRuntimeMapMatchesSeed:
         assert CALIBRATED_SIGNAL_VALUES["S_vs_L"] == CALIBRATED_SIGNAL_VALUES["L_vs_L"]
         assert CALIBRATED_SIGNAL_VALUES["S_vs_S"] == 0.0
 
-    def test_map_covers_exactly_the_nine_buckets_and_none(self) -> None:
+    def test_map_covers_exactly_the_nine_buckets(self) -> None:
+        """Exactly the nine handedness buckets -- no None key. An irresolvable
+        matchup is handled by compute_signal_fields returning None (ADR 0028),
+        not by a None entry in the calibrated map."""
         expected = {
             "R_vs_R",
             "R_vs_L",
@@ -51,9 +54,5 @@ class TestRuntimeMapMatchesSeed:
             "S_vs_R",
             "S_vs_L",
             "S_vs_S",
-            None,
         }
         assert set(CALIBRATED_SIGNAL_VALUES.keys()) == expected
-
-    def test_none_fallback_is_neutral(self) -> None:
-        assert CALIBRATED_SIGNAL_VALUES[None] == 0.0

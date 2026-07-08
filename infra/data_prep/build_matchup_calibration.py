@@ -261,19 +261,18 @@ def write_runtime_module(
         MODULE_DOCSTRING.format(date_min=date_min, date_max=date_max, total_pa=int(total_pa)),
         "from __future__ import annotations",
         "",
-        "CALIBRATED_SIGNAL_VALUES: dict[str | None, float] = {",
+        "CALIBRATED_SIGNAL_VALUES: dict[str, float] = {",
     ]
     for matchup, value, note in ordered:
         comment = f"  # {note}" if note else ""
         lines.append(f'    "{matchup}": {value},{comment}')
-    lines.append("    None: 0.0,  # unknown matchup -> neutral signal")
     lines.append("}")
     lines.append("")
 
     out = Path(module_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text("\n".join(lines))
-    print(f"wrote {module_path} ({len(ordered)} buckets + None fallback)")
+    print(f"wrote {module_path} ({len(ordered)} buckets)")
 
 
 def build(
