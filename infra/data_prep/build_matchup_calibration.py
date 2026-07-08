@@ -186,6 +186,12 @@ the original placeholder documented -- a switch pitcher picks the
 favorable side, so S_vs_R mirrors R_vs_R and S_vs_L mirrors L_vs_L,
 with S_vs_S neutral. Regenerate this module by re-running the generator
 with --module-out; do not edit values by hand.
+
+The map holds exactly the nine handedness buckets. It carries no None key:
+an irresolvable matchup (a player absent from the handedness seed) is not
+a bucket with a neutral value -- it is the absence of a computable signal,
+which compute_signal_fields represents by returning None rather than a
+fabricated 0.0 (ADR 0028).
 """
 
 '''
