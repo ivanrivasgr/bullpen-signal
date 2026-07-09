@@ -1,200 +1,153 @@
 # Bullpen Signal
 
-A dual-path decision engine for pitcher fatigue, bullpen readiness, and matchup leverage. What real-time gets you first, what batch gets you right, and why a manager needs both in the dugout.
+A dual-path decision engine for pitcher removal. A streaming path computes signals live, under realistic noise; a batch path recomputes them from the complete, corrected record. The product is the reconciliation between the two: every pitch where the real-time read differed from canonical truth, classified and explained.
 
 ## The thesis
 
-In baseball, three decisions are made in the same 30-second window between pitches: pull the pitcher, warm the bullpen, change for matchup. A real-time system gives you signals in seconds but with incomplete information — provisional pitch classification, preliminary spin rate, the next batter not yet confirmed. A batch system gives you canonical truth but arrives too late for the operational decision.
+In a live game, the real-time system decides on information as of emission: projected lineups, late arrivals, events that are corrected afterwards. The batch path recomputes hours later against the complete record. The difference between the two reads -- the delta -- is not a system error. It is the honest measure of what it cost to decide in real time on incomplete information.
 
-Bullpen Signal runs both paths over the same ground truth — a deterministic replay of real MLB games — and measures with hard metrics where each architecture wins and loses. It is not streaming versus batch. It is *when* each is the right answer, and how a reconciliation layer turns that tension into a product.
+The reconciliation dashboard is the product. A regression in the reconciliation is a regression in the thesis. That is why the stream's noise -- duplicates, late arrivals, corrections -- is preserved and reported, never filtered so the two paths agree artificially.
 
-## Status
+## What the data said
 
-Phase 2 Milestone 2 closed 2026-06-05. The matchup signal materializes end-to-end on real Statcast 2024 data through the silver and marts layers. Phase 3 reconciliation triangle (canonical outcomes, should-have-fired ledger, summary aggregation) is in place. Revision taxonomy and the revision event wire contract land per ADR 0017.
+Across 14 game dates and 53,817 pitches, the corpus produced a finding that was not designed:
 
-| Layer | Status |
-|---|---|
-| Replay engine (Statcast → Kafka, Avro, Schema Registry) | ✅ |
-| Bronze Iceberg on MinIO via PyIceberg | ✅ |
-| Silver dbt models (pitch events, fatigue, matchup signals) | ✅ |
-| Marts (canonical outcomes, should-have-fired ledger, reconciliation summary) | ✅ |
-| Revision event contract + emitter (function pure) | ✅ |
-| Revision producer (batch + streaming) | Phase 3 |
-| Streaming Flink job for matchup signal | Scheduled 2026-06-20 (ADR 0016) |
-| Alert orchestration + dashboard live data | Phase 4 |
-| Cloud deployment + CI/CD + observability | Phase 4 |
+- **All streaming-vs-canonical divergence lives in innings 1 and 2**, before lineups are confirmed: 430 divergent pitches (353 reversals, 41 escalations, 36 softenings), 335 of them in the first inning. Zero past the second.
+- **Removal alerts fire in innings 4 through 6**, when the pitcher has thrown enough to fatigue and the batting order is long settled.
+- **The two phases barely overlap.** Of 84 action-grade alerts, exactly zero land on a divergent pitch. The 18 coincidences that exist are all info- or warning-severity.
 
-169 unit tests passing. `dbt build` clean across silver and marts. Honest stubs documented inline rather than hidden — see `docs/phase2/milestone_2_closeout.md`.
+The real-time path takes its information risk early, on uncertain lineups, and makes its replace calls late, on firm data. That is the kind of finding a front-office analyst would report, and it emerged from the reconciliation rather than from a hypothesis.
+
+## The three signals
+
+Every signal comes from a published source or is derived verifiably from the data. Nothing is invented.
+
+**Leverage** -- Tom Tango's published Leverage Index, loaded as a 3,696-state seed and verified cell by cell against the source tables. Each pitch maps to its game state: inning, half, bases, outs, score difference. An emergent validation: the mean LI across all 53,817 pitches is 1.025, the property the index has by construction.
+
+**Fatigue** -- per-pitch mechanical deviation via Mahalanobis distance from the pitcher's own fresh baseline (his first 15 pitches of the game), over velocity, spin, and command. The method follows Dillon et al. (2025), *Orthopaedic Journal of Sports Medicine*. Documented adaptation: three of the paper's five features, because the feed does not carry arm angle, extension, or acceleration. Pitcher-games under 15 pitches yield NULL rather than a fabricated baseline.
+
+**Matchup** -- handedness magnitudes calibrated on the full 2024 regular season (711,898 pitches, 181,116 plate appearances) with the delta method of *The Book* (Tango, Lichtman, Dolphin): within-batter wOBA differences weighted by the harmonic mean of each batter's plate appearances against either pitcher side. The emergent check the method predicts -- both platoon splits positive, left-handed batters larger than right -- comes out of the run, not into it. This is the one signal with two genuinely different sources: the streaming emission under lineup uncertainty against the batch-canonical value.
+
+## The alert orchestrator
+
+The three signals compose into pitcher-removal alerts following the published decision literature: **decline** (fatigue) x **situation** (leverage) x **familiarity** (times through the order). The TTO term is continuous, with no hard third-time-through cutoff, per Brill et al. (2023). Thresholds are anchored in published sources: Tango's leverage bands (medium 0.85, high 2.0) and the paper's fatigue percentiles (p90 ~ 3.2, p95 ~ 4.0, where p95 is its outlier threshold). Severities: info, warning, action.
+
+On the corpus: 2,302 alerts, of which 84 are action-grade, across only 50 of 1,527 pitcher-games -- selective, as a removal call should be.
 
 ## Architecture
 
-The replay engine publishes Statcast pitch-level data and MLB StatsAPI game state to Kafka topics. Two paths consume the same stream:
-
-- **Streaming** (Phase 3+): Flink stateful jobs compute fatigue, leverage, and matchup signals in real time, emitting to topics that an alert orchestrator subscribes to.
-- **Batch** (today): dbt incremental and Python models on DuckDB reconstruct canonical truth over Iceberg snapshots, applying late arrivals, duplicates, and official corrections.
-
-Both paths land in a medallion lakehouse on Iceberg. A reconciliation layer compares every streaming emission against canonical truth and records the delta. The dashboard surfaces three views: live dugout, canonical truth, and reconciliation.
 ```
-Statcast parquets   StatsAPI lineups
-│                  │
-└────────┬─────────┘
-│
-replay engine (Avro)
-│
-┌───────┴───────┐
-│               │
-Kafka          (uncertainty window injection)
-│
-┌─────┴─────┐
-│           │
-Flink     Iceberg (bronze)
-(Phase 3)     │
-│
-dbt silver
-(pitch events, fatigue, matchup events, matchup signals)
-│
-marts
-(canonical outcomes, should-have-fired ledger,
-reconciliation summary)
-│
-Dashboard
+Statcast parquets ── replay engine (deliberate noise) ──> Kafka (Avro + Schema Registry)
+                                                             │
+                            ┌────────────────────────────────┴───────────────┐
+                            │                                                │
+                     Flink streaming job                             Iceberg bronze
+                     (as-of-emission signal)                                 │
+                            │                                          dbt silver
+                            │                                     (pitch events, leverage,
+                            │                                      fatigue, matchup signals)
+                            │                                                │
+                            │                                             marts
+                            │                                   (alerts, signal values,
+                            │                                     reconciliation)
+                            └────────────────────────────────┬───────────────┘
+                                                             │
+                                                   Streamlit dashboard
+                                          (live dugout / canonical truth / reconciliation)
 ```
 
-See `docs/architecture/` for component diagrams and `docs/adr/` for the decisions behind each choice.
+The replay engine injects noise on purpose: duplicate deliveries, late arrivals, official corrections. The Flink job emits the stream faithfully and filters nothing. Exact redeliveries collapse idempotently on read; late arrivals are preserved, because they are the divergence the product exists to surface.
+
+The signal core is shared. `signals/matchup_core.py` holds the computation both paths call -- the batch dbt model and the Flink UDF -- so the two cannot drift. That is the anti-drift guarantee behind the reconciliation being meaningful at all.
 
 ## Stack
 
 - **Event bus:** Redpanda (Kafka API) with Confluent Schema Registry for Avro contracts
-- **Stream processing:** PyFlink (Phase 3 streaming jobs)
-- **Lakehouse:** Apache Iceberg on MinIO via PyIceberg
-- **Local query / batch transforms:** DuckDB + dbt-duckdb (incremental + Python models)
-- **Data sources:** Statcast (via pybaseball) and MLB StatsAPI
-- **Observability:** Prometheus + Grafana (containers running; instrumentation in Phase 4)
-- **Languages:** Python 3.11, SQL, a thin layer of Flink SQL DDL
+- **Stream processing:** PyFlink 2.2.0 on Flink 1.20.3
+- **Lakehouse:** Apache Iceberg on MinIO, via a REST catalog and PyIceberg
+- **Batch transforms:** dbt-duckdb (SQL, incremental, and Python models)
+- **Dashboard:** Streamlit + Plotly
+- **Observability:** Prometheus + Grafana
+- **Language:** Python 3.11; ruff for lint and format, enforced by pre-commit
 
-## Architecture Decisions (ADRs)
+## Tests and CI
 
-The repo's load-bearing decisions live as ADRs. Each one names the alternatives rejected and the consequences accepted.
+258 unit tests and 123 dbt tests, all passing. CI runs `ruff check`, `ruff format --check`, and the unit suite with coverage on every push. The dbt tests run locally against the materialized lakehouse.
 
-| ADR | Title | Status |
-|---|---|---|
-| 0001 | Why dual-path | Accepted |
-| 0002 | Redpanda for event bus | Accepted |
-| 0003 | Iceberg on MinIO | Accepted |
-| 0004 | PyFlink over Java | Accepted |
-| 0005 | DuckDB as Phase 0 target | Accepted |
-| 0006 | Synthesized event times for replay | Accepted |
-| 0007 | ML provenance and reproducibility | Accepted |
-| 0008 | Silver design decisions | Accepted |
-| 0009 | dbt on DuckDB as local engine | Accepted |
-| 0012 | Streaming foundation decisions | Accepted |
-| 0013 | BATTER_UNCERTAIN state representation (categorical, not probabilistic) | Accepted |
-| 0014 | Uncertainty window injection mechanism | Accepted |
-| 0015 | Projected batter source during uncertainty | Accepted |
-| 0016 | Matchup signal design — batch first, streaming in Phase 3 | Accepted |
-| 0017 | Revision taxonomy for matchup signal updates | Accepted |
-| 0018 | `would_have_been_correct` as heuristic, not metric | Accepted |
+The unit suite includes anti-drift contracts: the calibrated magnitude map is pinned row by row against the seed CSV that the same generator run produced, so the runtime signal and its audit trail cannot diverge silently.
+
+## Architecture Decision Records
+
+The load-bearing decisions live in `docs/adr/`. Each names the alternatives rejected and the consequences accepted. A few worth reading first:
+
+| ADR | Title |
+|---|---|
+| 0001 | Why a dual-path architecture |
+| 0013 | BATTER_UNCERTAIN state representation (categorical, not sentinel) |
+| 0015 | Projected batter source during the uncertainty window |
+| 0020 | Resolution via dbt double emission |
+| 0021 | Streaming migration: making the dual path comparable |
+| 0026 | Dashboard reconciliation: scope, signals, and method |
+| 0027 | Calibrated matchup magnitudes (delta method, full season) |
+| 0028 | An irresolvable matchup is null, not zero |
+
+ADR 0027 is worth a look for a method that was measured and rejected with evidence: the per-bucket league aggregate produced an inverted left-handed split, because platooning managers select who faces whom, so bucket aggregates measure roster usage rather than the matchup effect. The delta method removes that bias, and the ADR shows both numbers.
+
+ADR 0028 documents a defect and its correction: a lookup default fabricated a `0.0` for a matchup that could not be computed, and that fabricated zero reached the classifier as a spurious divergence. The fix records `NULL` instead -- "could not compute" is the absence of a value, not a neutral one -- and the ADR states what the data showed, including where its own first draft was wrong.
 
 ## Running locally
 
-The repo expects Docker, Python 3.11, and roughly 4 GB free disk for the local lakehouse.
-
-### One-time setup
+Requires Docker, Python 3.11, and roughly 4 GB of free disk for the local lakehouse.
 
 ```bash
-# Spin up the local stack: Redpanda, MinIO, Schema Registry,
-# Iceberg REST catalog, Flink, Prometheus, Grafana.
+# 1. Bring up the local stack: Redpanda, MinIO, Iceberg REST catalog,
+#    Flink, Prometheus, Grafana.
 docker compose -f infra/docker/docker-compose.yml up -d
 
-# Install Python dependencies in a venv.
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
+# 2. Install dependencies. Two environments: streaming/dashboard, and batch.
+python3.11 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+python3.11 -m venv .venv-batch && .venv-batch/bin/pip install -r requirements-batch.txt
+.venv/bin/pre-commit install
 
-# Install pre-commit hooks (ruff, yaml checks, trailing whitespace).
-pre-commit install
+# 3. Replay a day of games into Kafka, with noise and lineup uncertainty.
+.venv/bin/python -m ingestion.replay_engine.run \
+    --game-date 2024-04-02 --speed 2000 --limit 1500 \
+    --uncertainty-rate 1.0 --seed 42 \
+    --lineup-cache-path data/precomputed/lineups.json
 
-# Create the Iceberg bronze.pitches table.
-python -m infra.scripts.create_bronze_tables
+# 4. Submit the streaming matchup job.
+bash streaming/flink_jobs/matchup/submit.sh
+
+# 5. Bridge Iceberg into DuckDB and build the models.
+.venv-batch/bin/python infra/scripts/refresh_iceberg_sources.py
+.venv-batch/bin/python infra/scripts/materialize_dbt_sources.py \
+    --namespace streaming --table matchup_signals \
+    --metadata-location "<from dbt/.iceberg_sources.json>"
+cd dbt && ../.venv-batch/bin/dbt build --profiles-dir .
+
+# 6. Open the dashboard.
+.venv/bin/streamlit run apps/dashboard/main.py
 ```
 
-### Running a replay
+Unit tests: `.venv/bin/python -m pytest tests/unit/ --no-cov -q`
 
-```bash
-# Submit the Flink smoke job that reads pitches.raw and writes to bronze.pitches.
-docker cp streaming/flink_jobs/_smoke/job.py bullpen-flink-jm:/tmp/smoke_job_run.py
-docker exec bullpen-flink-jm /opt/flink/bin/flink run -py /tmp/smoke_job_run.py --detached
+## What this project is not
 
-# Run a deterministic replay of one day of MLB games.
-python -m ingestion.replay_engine.run --game-date 2024-04-15 --speed 1000 --limit 200
-```
+- Not an outcome predictor and not a betting system.
+- Not a tutorial. It is a system with real engineering decisions and their costs.
+- It does not fabricate data. Where there is no source -- team names, venue, jersey numbers, earned runs -- the dashboard shows the gap rather than inventing a value. Earned runs, for instance, are not derivable without fielding-error data, so runs are shown instead and the omission is stated.
 
-### Materializing the lakehouse
+## Known limitations
 
-```bash
-# Refresh dbt's view of the Iceberg metadata.
-python -m infra.scripts.refresh_iceberg_sources
+Documented rather than hidden:
 
-# Materialize bronze.pitches into DuckDB for dbt.
-python -m infra.scripts.materialize_dbt_sources \
-    --metadata-location "$(python -c 'import json; print(json.load(open(\"dbt/.iceberg_sources.json\"))[\"bronze.pitches\"][\"metadata_location\"])')"
-
-# Build the silver chain and marts.
-cd dbt && dbt build --select silver marts
-```
-
-### Running tests
-
-```bash
-# Unit suite (currently 169 tests).
-pytest tests/unit/ --no-cov -q
-
-# dbt tests are included in `dbt build`.
-```
-
-## Repository structure
-```
-bullpen-signal/
-├── apps/
-│   └── dashboard/             Streamlit dashboard (live data in Phase 4)
-├── data/
-│   └── raw/                   Statcast parquets (not in git; pulled via pybaseball)
-├── dbt/
-│   ├── models/
-│   │   ├── silver/            pitch events, fatigue, matchup events + signals
-│   │   └── marts/             canonical outcomes, ledger, reconciliation summary
-│   ├── seeds/                 player_handedness (extracted from Statcast)
-│   └── tests/                 Custom SQL natural-key uniqueness tests
-├── docs/
-│   ├── adr/                   Architecture Decision Records (0001-0018)
-│   ├── phase2/                Milestone plans + narrative closeouts
-│   └── architecture/          Component diagrams
-├── infra/
-│   ├── docker/                docker-compose stack
-│   └── scripts/               Iceberg + DuckDB ops helpers
-├── ingestion/
-│   └── replay_engine/         Statcast → Kafka, noise injection, uncertainty window
-├── lakehouse/
-│   └── schemas/               PyIceberg schema definitions
-├── signals/                   Pure signal generation + revision emitter
-├── streaming/
-│   ├── flink_jobs/            PyFlink job sources (smoke job today; real jobs Phase 3)
-│   └── schemas/               Avro schemas for each Kafka topic
-└── tests/
-    ├── unit/              Unit tests (169 passing)
-    └── integration/       Integration scaffold (Phase 3+)
-```
-
-## What is honest about this repo
-
-Three things are deliberately incomplete and named:
-
-- **The matchup signal_value magnitudes are placeholders.** They encode the conventional baseball intuition that opposite-handed matchups favor the batter and same-handed matchups slightly favor the pitcher, but they are not calibrated against historical outcomes. ADR 0016 documents this; Phase 3 reconciliation will calibrate.
-- **`would_have_been_correct` in the should-have-fired ledger is a heuristic.** Sign-only classification against the realized outcome. ADR 0018 documents the limitations explicitly. When Phase 3 accumulates enough outcome data, the column name stays stable and the definition becomes calibrated.
-- **The streaming path for the matchup signal is not the matchup writer today.** The smoke Flink job writes pitches to bronze; the matchup signal is materialized via dbt Python on a clean snapshot. ADR 0016 schedules the streaming migration for 2026-06-20.
-
-What you will not find in this repo: stubs disguised as features, placeholders masked as calibrated metrics, or `TODO` comments hiding decisions that should have been ADRs.
+- The projected batter that drives a reduced-confidence emission is not persisted on the output row, so a `NULL` signal value cannot be explained from the row alone (ADR 0028). Persisting it is the next contract change.
+- `confirmed_late` is unreachable for the matchup signal today: the late-arrival flag is not threaded into the long signal-values model.
+- Leverage and fatigue have no streaming twin yet; per ADR 0026 D4 they are deterministic from the pitch's own inputs, so their streaming and canonical reads are the same computation.
+- The dashboard reads a fixed `game_pk`; a game selector is not built.
 
 ## Project context
 
-Bullpen Signal is built in public as a portfolio piece. Development log and architectural decisions are tracked in `docs/adr/` and `docs/phase*/`. The thesis above is the load-bearing claim. Everything else is the system that defends it.
+Bullpen Signal is built in public as a portfolio piece. The thesis above is the load-bearing claim. Everything else is the system that defends it.
+
+Author: Ivan F. Gruber
