@@ -978,6 +978,8 @@ with tab_recon:
     _div_i1 = sum(1 for r in recon if r.inning == 1)
     _div_i2 = sum(1 for r in recon if r.inning == 2)
     _div_i3p = sum(1 for r in recon if r.inning >= 3)
+    _comparable, _agreed = sd.reconciliation_coverage()
+    _div_rate = 100.0 * _n_div / _comparable if _comparable else 0.0
     st.markdown(
         f"""
 <div class="section-head">
@@ -985,13 +987,18 @@ with tab_recon:
   <h2 class="section-title">Where streaming met canonical truth</h2>
 </div>
 <p class="analysis" style="column-count: 1;">
-Every streaming signal is joined against the batch-canonical value for the same pitch, and the delta is recorded with an outcome classification. The divergence is not spread through the game &mdash; it is entirely in the first two innings. Across the dataset, {_n_div} pitches diverged under the calibrated matchup magnitudes: {_n_rev} reversals, where the projected lineup gave one side of the platoon and the confirmed lineup gave the other, plus softened and escalated reads &mdash; projection errors between two same-sign matchups, which only the calibrated magnitudes can tell apart. Once the batting order is confirmed, streaming and canonical agree exactly. The orchestrator's removal alerts, by contrast, fire from the fourth inning on, when the pitcher has thrown enough to fatigue and the order is long settled. The two almost never coincide &mdash; the real-time path takes its risk early, on an uncertain lineup, and makes its replace calls late, on firm information.
+Every streaming signal is joined against the batch-canonical value for the same pitch, and the delta is recorded with an outcome classification. The divergence is not spread through the game &mdash; it is entirely in the first two innings. Of the {_comparable:,} pitches both paths read, {_n_div} diverged &mdash; {_div_rate:.1f} percent. The other {_agreed:,} agreed to the digit. The divergences, under the calibrated matchup magnitudes, break down as: {_n_rev} reversals, where the projected lineup gave one side of the platoon and the confirmed lineup gave the other, plus softened and escalated reads &mdash; projection errors between two same-sign matchups, which only the calibrated magnitudes can tell apart. Once the batting order is confirmed, streaming and canonical agree exactly. The orchestrator's removal alerts, by contrast, fire from the fourth inning on, when the pitcher has thrown enough to fatigue and the order is long settled. The two almost never coincide &mdash; the real-time path takes its risk early, on an uncertain lineup, and makes its replace calls late, on firm information.
 </p>
 <div class="section-head">
   <span class="section-numeral">§ II</span>
   <h2 class="section-title">The divergence is early</h2>
 </div>
-<div class="signals-grid" style="grid-template-columns: repeat(4, 1fr);">
+<div class="signals-grid" style="grid-template-columns: repeat(5, 1fr);">
+  <div class="signal-tile">
+    <div class="signal-name">Agreed exactly</div>
+    <div class="signal-value">{_agreed:,}</div>
+    <div class="signal-caption">of {_comparable:,} pitches both paths read</div>
+  </div>
   <div class="signal-tile">
     <div class="signal-name">Inning 1</div>
     <div class="signal-value">{_div_i1}</div>

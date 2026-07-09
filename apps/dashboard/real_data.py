@@ -445,6 +445,33 @@ def alerts() -> list[Alert]:
     return out
 
 
+def reconciliation_coverage() -> tuple[int, int]:
+    """(comparable pitches, pitches where both paths produced the same value).
+
+    A pitch is comparable only when both paths produced a matchup value: the
+    streaming path read the dates that were replayed, the canonical path reads
+    every pitch in silver. Reporting a divergence count against the full pitch
+    total would understate the rate; reporting it with no denominator at all
+    says nothing about how often the two paths agree, which is most of the time.
+    """
+    con = _con()
+    row = con.execute(
+        """
+        SELECT
+            COUNT(*) AS comparable,
+            COUNT(*) FILTER (
+                WHERE ABS(streaming_value - canonical_value) <= 0.0001
+            ) AS agreed
+        FROM marts.mart_signal_values_long
+        WHERE signal = 'matchup'
+          AND streaming_value IS NOT NULL
+          AND canonical_value IS NOT NULL
+        """
+    ).fetchone()
+    con.close()
+    return (int(row[0]), int(row[1]))
+
+
 def reconciliation_rows() -> list[ReconciliationRow]:
     """Every streaming-vs-canonical divergence across the dataset.
 
