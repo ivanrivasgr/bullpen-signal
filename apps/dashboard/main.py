@@ -814,15 +814,15 @@ with tab_live:
   <div class="signal-tile">
     <div class="signal-tile-head">
       <span class="signal-name">Fatigue</span>
-      <span class="signal-status-dot action"></span>
+      <span class="signal-status-dot"></span>
     </div>
     <div class="signal-value">{current_signal.fatigue:.2f}</div>
-    <div class="signal-caption">Past action threshold of 0.70. Driven chiefly by velocity component ({velo_delta:.2f}) and command drop ({cmd_delta:.2f}).</div>
+    <div class="signal-caption">Mahalanobis distance from this pitcher's own fresh baseline, below the warning threshold of 3.2. Velocity component {velo_delta:.2f}, command component {cmd_delta:.2f}.</div>
   </div>
   <div class="signal-tile">
     <div class="signal-tile-head">
       <span class="signal-name">Leverage</span>
-      <span class="signal-status-dot warning"></span>
+      <span class="signal-status-dot"></span>
     </div>
     <div class="signal-value">{current_signal.leverage:.2f}</div>
     <div class="signal-caption">Bases empty, down four, sixth inning. Low-leverage situation; game is largely decided.</div>
@@ -833,7 +833,7 @@ with tab_live:
       <span class="signal-status-dot warning"></span>
     </div>
     <div class="signal-value">{current_signal.matchup_edge:+.3f}</div>
-    <div class="signal-caption">Expected wOBA allowed vs. next confirmed batter. Negative is favorable; the margin has compressed over the last fifteen pitches.</div>
+    <div class="signal-caption">Calibrated handedness magnitude for this pitcher-batter matchup, in wOBA points. Positive favors the pitcher. Measured on the 2024 season with the delta method.</div>
   </div>
 </div>
 """,
@@ -985,7 +985,7 @@ with tab_recon:
   <h2 class="section-title">Where streaming met canonical truth</h2>
 </div>
 <p class="analysis" style="column-count: 1;">
-Every streaming signal is joined against the batch-canonical value for the same pitch, and the delta is recorded with an outcome classification. The divergence is not spread through the game &mdash; it is entirely in the first two innings. Across the dataset, {_n_div} pitches diverged under the calibrated matchup magnitudes: {_n_rev} reversals, where the projected lineup gave one side of the platoon and the confirmed lineup gave the other, plus the first softened and escalated reads &mdash; projection errors between two same-sign matchups the placeholder map could not tell apart. Once the batting order is confirmed, streaming and canonical agree exactly. The orchestrator's removal alerts, by contrast, fire from the fourth inning on, when the pitcher has thrown enough to fatigue and the order is long settled. The two almost never coincide &mdash; the real-time path takes its risk early, on an uncertain lineup, and makes its replace calls late, on firm information.
+Every streaming signal is joined against the batch-canonical value for the same pitch, and the delta is recorded with an outcome classification. The divergence is not spread through the game &mdash; it is entirely in the first two innings. Across the dataset, {_n_div} pitches diverged under the calibrated matchup magnitudes: {_n_rev} reversals, where the projected lineup gave one side of the platoon and the confirmed lineup gave the other, plus softened and escalated reads &mdash; projection errors between two same-sign matchups, which only the calibrated magnitudes can tell apart. Once the batting order is confirmed, streaming and canonical agree exactly. The orchestrator's removal alerts, by contrast, fire from the fourth inning on, when the pitcher has thrown enough to fatigue and the order is long settled. The two almost never coincide &mdash; the real-time path takes its risk early, on an uncertain lineup, and makes its replace calls late, on firm information.
 </p>
 <div class="section-head">
   <span class="section-numeral">§ II</span>
