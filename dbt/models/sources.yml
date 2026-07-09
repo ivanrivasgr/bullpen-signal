@@ -59,8 +59,13 @@ sources:
             tests:
               - not_null
           - name: signal_value
-            tests:
-              - not_null
+            # No not_null test: signal_value is null when the batter projected
+            # under lineup uncertainty is irresolvable (absent from the
+            # handedness seed), which is "could not compute", not a fabricated
+            # 0.0 (ADR 0028). The projected batter that drove the value is not
+            # persisted, so no existing column distinguishes these rows from a
+            # resolved uncertain emission; a targeted test needs that column
+            # first (see the projected_batter_id debt).
           - name: confidence_band
             tests:
               - not_null

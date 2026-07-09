@@ -187,10 +187,14 @@ models:
       - name: signal_value
         description: |
           Matchup edge in the pitcher's direction. Positive favors pitcher;
-          negative favors batter. Placeholder values per ADR 0016, to be
-          calibrated in Phase 3 from reconciliation outcomes.
-        tests:
-          - not_null
+          negative favors batter. Calibrated from the 2024 season via the
+          delta method (ADR 0027). Null when the batter projected under
+          lineup uncertainty is irresolvable (absent from the handedness
+          seed): "could not compute" is the absence of a value, not a
+          fabricated 0.0 (ADR 0028). No not_null test -- the projected batter
+          that drove the value is not persisted, so no column distinguishes
+          these rows from a resolved emission; a targeted test needs that
+          column first (projected_batter_id debt).
       - name: confidence_band
         description: |
           One of full / reduced / suppressed, mapped from lineup_state per
